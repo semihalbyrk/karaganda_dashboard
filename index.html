@@ -59,132 +59,129 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <!-- Control Panel -->
-            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md h-fit">
-                <!-- Toggle Buttons -->
-                <div class="flex border border-gray-200 rounded-lg p-1 mb-6 bg-gray-100">
-                    <button id="paramsToggle" class="w-1/2 toggle-btn-active rounded-md py-2 text-sm font-medium transition-colors duration-200">Parameters</button>
-                    <button id="stationsToggle" class="w-1/2 toggle-btn-inactive rounded-md py-2 text-sm font-medium transition-colors duration-200">Stations</button>
-                </div>
+        <!-- Control Panel Section -->
+        <div class="bg-white p-6 rounded-xl shadow-md h-fit mb-8 max-w-5xl mx-auto">
+            <!-- Toggle Buttons -->
+            <div class="flex border border-gray-200 rounded-lg p-1 mb-6 bg-gray-100 max-w-sm mx-auto">
+                <button id="paramsToggle" class="w-1/2 toggle-btn-active rounded-md py-2 text-sm font-medium transition-colors duration-200">Parameters</button>
+                <button id="stationsToggle" class="w-1/2 toggle-btn-inactive rounded-md py-2 text-sm font-medium transition-colors duration-200">Stations</button>
+            </div>
 
-                <!-- Parameters View -->
-                <div id="parametersView">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6 border-b pb-3">Simulation Parameters</h2>
-                    <div class="space-y-5">
-                        <div>
-                            <label for="simulationDays" class="block text-sm font-medium text-gray-700">Simulation Duration (days)</label>
-                            <input type="number" id="simulationDays" value="60" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="numTrucks" class="block text-sm font-medium text-gray-700">Number of Trucks</label>
-                            <input type="number" id="numTrucks" value="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="avgSpeed" class="block text-sm font-medium text-gray-700">Average Speed (km/h)</label>
-                            <input type="number" id="avgSpeed" value="35" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="triggerPercent" class="block text-sm font-medium text-gray-700">Fill Level Trigger (%)</label>
-                            <input type="number" id="triggerPercent" value="85" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="loadingTime" class="block text-sm font-medium text-gray-700">Loading Time (minutes)</label>
-                            <input type="number" id="loadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="unloadingTime" class="block text-sm font-medium text-gray-700">Unloading Time (minutes)</label>
-                            <input type="number" id="unloadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="workStart" class="block text-sm font-medium text-gray-700">Workday Start</label>
-                            <input type="number" id="workStart" value="8" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="workEnd" class="block text-sm font-medium text-gray-700">Workday End</label>
-                            <input type="number" id="workEnd" value="16" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
-                        <div>
-                            <label for="targetUtilization" class="block text-sm font-medium text-gray-700">Target Utilization (%)</label>
-                            <input type="number" id="targetUtilization" value="85" min="1" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
-                        </div>
+            <!-- Parameters View -->
+            <div id="parametersView">
+                <h2 class="text-xl text-center font-bold text-gray-800 mb-6 border-b pb-3">Simulation Parameters</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="simulationDays" class="block text-sm font-medium text-gray-700">Simulation Duration (days)</label>
+                        <input type="number" id="simulationDays" value="60" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="numTrucks" class="block text-sm font-medium text-gray-700">Number of Trucks</label>
+                        <input type="number" id="numTrucks" value="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="avgSpeed" class="block text-sm font-medium text-gray-700">Average Speed (km/h)</label>
+                        <input type="number" id="avgSpeed" value="35" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="triggerPercent" class="block text-sm font-medium text-gray-700">Fill Level Trigger (%)</label>
+                        <input type="number" id="triggerPercent" value="85" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="loadingTime" class="block text-sm font-medium text-gray-700">Loading Time (minutes)</label>
+                        <input type="number" id="loadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="unloadingTime" class="block text-sm font-medium text-gray-700">Unloading Time (minutes)</label>
+                        <input type="number" id="unloadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="workStart" class="block text-sm font-medium text-gray-700">Workday Start</label>
+                        <input type="number" id="workStart" value="8" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="workEnd" class="block text-sm font-medium text-gray-700">Workday End</label>
+                        <input type="number" id="workEnd" value="16" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="targetUtilization" class="block text-sm font-medium text-gray-700">Target Utilization (%)</label>
+                        <input type="number" id="targetUtilization" value="85" min="1" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                     </div>
                 </div>
-
-                <!-- Stations View -->
-                <div id="stationsView" class="hidden">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Ecostation Data</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Rate (kg)</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Output (tons)</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity (kg)</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time to Fill (days)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stationsTableBody" class="bg-white divide-y divide-gray-200">
-                                <!-- Rows will be inserted here by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
                 <button id="runSimulationBtn" class="mt-8 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 flex items-center justify-center">
                     <svg id="runIcon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <span id="runBtnText">Run Simulation</span>
                 </button>
             </div>
 
-            <!-- Results and Charts -->
-            <div class="lg:col-span-3">
-                <!-- Key Metrics -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-lg font-semibold text-gray-500">Total Waste Collected</h3>
-                        <p id="totalWaste" class="text-4xl font-bold text-indigo-600 mt-2">-- tons</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-lg font-semibold text-gray-500">Avg. Truck Utilization</h3>
-                        <p id="avgUtilization" class="text-4xl font-bold text-indigo-600 mt-2">-- %</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-lg font-semibold text-gray-500">Total Service Failures</h3>
-                        <p id="totalFailures" class="text-4xl font-bold text-red-500 mt-2">--</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
-                        <h3 class="text-lg font-semibold text-gray-500">Potential Additional Tonnage</h3>
-                        <p id="potentialTonnage" class="text-4xl font-bold text-green-600 mt-2">-- tons</p>
-                    </div>
+            <!-- Stations View -->
+            <div id="stationsView" class="hidden">
+                <h2 class="text-xl text-center font-bold text-gray-800 mb-4 border-b pb-3">Ecostation Data</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Rate (kg)</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Output (tons)</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity (kg)</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time to Fill (days)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stationsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Rows will be inserted here by JS -->
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+        </div>
 
-                <!-- Charts -->
-                <div id="chartsContainer" class="space-y-8">
-                     <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">Truck Utilization Rate (%)</h3>
-                        <canvas id="utilizationChart"></canvas>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">Average Station Wait Time (hours)</h3>
-                        <canvas id="waitTimeChart"></canvas>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">Hourly Truck Activity</h3>
-                        <canvas id="hourlyActivityChart"></canvas>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-md">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4">Service Failures by Station (Overflow Count)</h3>
-                        <canvas id="failuresChart"></canvas>
-                    </div>
+        <!-- Results Section -->
+        <div>
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Total Waste Collected</h3>
+                    <p id="totalWaste" class="text-4xl font-bold text-indigo-600 mt-2">-- tons</p>
                 </div>
-                 <!-- Loader -->
-                <div id="loaderContainer" class="hidden items-center justify-center h-96 bg-white p-6 rounded-xl shadow-md">
-                    <div class="text-center">
-                        <div class="loader mx-auto"></div>
-                        <p class="mt-4 text-gray-600 font-semibold">Simulation is running, please wait...</p>
-                    </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Avg. Truck Utilization</h3>
+                    <p id="avgUtilization" class="text-4xl font-bold text-indigo-600 mt-2">-- %</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Total Service Failures</h3>
+                    <p id="totalFailures" class="text-4xl font-bold text-red-500 mt-2">--</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Potential Additional Tonnage</h3>
+                    <p id="potentialTonnage" class="text-4xl font-bold text-green-600 mt-2">-- tons</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div id="chartsContainer" class="space-y-8">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Truck Utilization Rate (%)</h3>
+                    <canvas id="utilizationChart"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Average Station Wait Time (hours)</h3>
+                    <canvas id="waitTimeChart"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Hourly Truck Activity</h3>
+                    <canvas id="hourlyActivityChart"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Service Failures by Station (Overflow Count)</h3>
+                    <canvas id="failuresChart"></canvas>
+                </div>
+            </div>
+             <!-- Loader -->
+            <div id="loaderContainer" class="hidden items-center justify-center h-96 bg-white p-6 rounded-xl shadow-md">
+                <div class="text-center">
+                    <div class="loader mx-auto"></div>
+                    <p class="mt-4 text-gray-600 font-semibold">Simulation is running, please wait...</p>
                 </div>
             </div>
         </div>
