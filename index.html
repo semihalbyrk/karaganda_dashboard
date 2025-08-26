@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaganda Waste Collection - Digital Twin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toggle-btn-active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .toggle-btn-inactive {
+            color: #4b5563;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8 p-6 bg-white rounded-xl shadow-md">
+            <h1 class="text-3xl font-bold text-gray-800">Karaganda Digital Twin Simulation Dashboard</h1>
+            <p class="text-gray-600 mt-2">Adjust the simulation parameters to analyze operational efficiency and capacity increase.</p>
+        </div>
+        
+        <!-- Data Source Note -->
+        <div class="mb-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg shadow-sm">
+             <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        <strong>Data Source & Simulation Period:</strong> The simulation uses average daily waste generation rates calculated from historical data (approx. June - mid-August). The "Total Waste Collected" figure is a projection for a hypothetical period (e.g., 60 days) based on these rates, not a direct sum from the historical data.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Control Panel -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md h-fit">
+                <!-- Toggle Buttons -->
+                <div class="flex border border-gray-200 rounded-lg p-1 mb-6 bg-gray-100">
+                    <button id="paramsToggle" class="w-1/2 toggle-btn-active rounded-md py-2 text-sm font-medium transition-colors duration-200">Parameters</button>
+                    <button id="stationsToggle" class="w-1/2 toggle-btn-inactive rounded-md py-2 text-sm font-medium transition-colors duration-200">Stations</button>
+                </div>
+
+                <!-- Parameters View -->
+                <div id="parametersView">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 border-b pb-3">Simulation Parameters</h2>
+                    <div class="space-y-5">
+                        <div>
+                            <label for="simulationDays" class="block text-sm font-medium text-gray-700">Simulation Duration (days)</label>
+                            <input type="number" id="simulationDays" value="60" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="numTrucks" class="block text-sm font-medium text-gray-700">Number of Trucks</label>
+                            <input type="number" id="numTrucks" value="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="avgSpeed" class="block text-sm font-medium text-gray-700">Average Speed (km/h)</label>
+                            <input type="number" id="avgSpeed" value="35" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="triggerPercent" class="block text-sm font-medium text-gray-700">Fill Level Trigger (%)</label>
+                            <input type="number" id="triggerPercent" value="85" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="loadingTime" class="block text-sm font-medium text-gray-700">Loading Time (minutes)</label>
+                            <input type="number" id="loadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="unloadingTime" class="block text-sm font-medium text-gray-700">Unloading Time (minutes)</label>
+                            <input type="number" id="unloadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="workStart" class="block text-sm font-medium text-gray-700">Workday Start</label>
+                            <input type="number" id="workStart" value="8" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="workEnd" class="block text-sm font-medium text-gray-700">Workday End</label>
+                            <input type="number" id="workEnd" value="16" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                        <div>
+                            <label for="targetUtilization" class="block text-sm font-medium text-gray-700">Target Utilization (%)</label>
+                            <input type="number" id="targetUtilization" value="85" min="1" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stations View -->
+                <div id="stationsView" class="hidden">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-3">Ecostation Data</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Rate (kg)</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Output (tons)</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity (kg)</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time to Fill (days)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stationsTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Rows will be inserted here by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <button id="runSimulationBtn" class="mt-8 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 flex items-center justify-center">
+                    <svg id="runIcon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="runBtnText">Run Simulation</span>
+                </button>
+            </div>
+
+            <!-- Results and Charts -->
+            <div class="lg:col-span-3">
+                <!-- Key Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                        <h3 class="text-lg font-semibold text-gray-500">Total Waste Collected</h3>
+                        <p id="totalWaste" class="text-4xl font-bold text-indigo-600 mt-2">-- tons</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                        <h3 class="text-lg font-semibold text-gray-500">Avg. Truck Utilization</h3>
+                        <p id="avgUtilization" class="text-4xl font-bold text-indigo-600 mt-2">-- %</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                        <h3 class="text-lg font-semibold text-gray-500">Total Service Failures</h3>
+                        <p id="totalFailures" class="text-4xl font-bold text-red-500 mt-2">--</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                        <h3 class="text-lg font-semibold text-gray-500">Potential Additional Tonnage</h3>
+                        <p id="potentialTonnage" class="text-4xl font-bold text-green-600 mt-2">-- tons</p>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div id="chartsContainer" class="space-y-8">
+                     <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Truck Utilization Rate (%)</h3>
+                        <canvas id="utilizationChart"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Average Station Wait Time (hours)</h3>
+                        <canvas id="waitTimeChart"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Hourly Truck Activity</h3>
+                        <canvas id="hourlyActivityChart"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Service Failures by Station (Overflow Count)</h3>
+                        <canvas id="failuresChart"></canvas>
+                    </div>
+                </div>
+                 <!-- Loader -->
+                <div id="loaderContainer" class="hidden items-center justify-center h-96 bg-white p-6 rounded-xl shadow-md">
+                    <div class="text-center">
+                        <div class="loader mx-auto"></div>
+                        <p class="mt-4 text-gray-600 font-semibold">Simulation is running, please wait...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Explanation Section -->
+        <div class="mt-8 bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">How the Simulation Works</h2>
+            <div class="prose max-w-none text-gray-600">
+                <p>The simulation engine is built on a loop that advances time in hourly increments. For a 60-day simulation, this loop runs 1,440 times (60 days * 24 hours). In each hourly step, the following sequence of events occurs:</p>
+                <h3 class="font-semibold text-gray-700 mt-4">1. Waste Accumulation</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>The engine checks if the current hour is within working hours (e.g., 08:00-16:00).</li>
+                    <li>If it is, each station's <strong>current_waste_kg</strong> is increased by its hourly accumulation rate. Outside of working hours, waste levels remain constant. This strictly applies the "8-Hour World" logic.</li>
+                </ul>
+                <h3 class="font-semibold text-gray-700 mt-4">2. Demand Trigger & Capacity Control</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>After waste is added, the engine checks each station.</li>
+                    <li>If a station's current waste exceeds the defined trigger percentage (e.g., 85%), a "collection request" is created and added to the <strong>collection_queue</strong>, if one doesn't already exist for that station.</li>
+                    <li>Simultaneously, if a station's waste exceeds 100% capacity while it's already waiting for collection, a "Service Failure" (overflow) is logged.</li>
+                </ul>
+                <h3 class="font-semibold text-gray-700 mt-4">3. Truck Assignment Logic (The Critical Step)</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>The engine checks for pending requests in the collection queue.</li>
+                    <li>It looks for an available truck (where <strong>is_busy = false</strong>).</li>
+                    <li>It takes the oldest request from the queue and calculates a "trip plan":
+                        <ul class="list-disc pl-6">
+                           <li>Time from Garage to Station (read from the pre-calculated time matrix).</li>
+                           <li>Loading time at the station (from parameters).</li>
+                           <li>Time from Station back to Garage.</li>
+                           <li>Unloading time at the garage.</li>
+                        </ul>
+                    </li>
+                    <li>It sums these to get the <strong>total trip duration</strong>.</li>
+                    <li><strong>"Is there enough time?" Check:</strong> The engine verifies if this total trip duration is less than the remaining time until the end of the current workday. If the trip cannot be completed before the workday ends, the assignment is not made.</li>
+                    <li>If an available truck is found and the trip can be completed within work hours, the assignment is made:
+                        <ul class="list-disc pl-6">
+                           <li>The truck is marked as "busy," and its next availability time (<strong>busy_until_hour</strong>) is calculated.</li>
+                           <li>The station's waste level is reset to zero.</li>
+                           <li>Data such as the amount of waste collected is logged.</li>
+                           <li>The request is removed from the collection queue.</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3 class="font-semibold text-gray-700 mt-6">How the New Outputs are Calculated</h3>
+                 <ul class="list-disc pl-5 space-y-2">
+                    <li>
+                        <strong>Potential Additional Tonnage:</strong> This metric quantifies the opportunity cost of idle truck time against a configurable target.
+                        <ol class="list-decimal pl-6 mt-1">
+                            <li><strong>Calculate Target Busy Time:</strong> `Target Busy Hours` = `Total Available Work Hours` * (`Target Utilization %` / 100).</li>
+                            <li><strong>Find Usable Idle Time:</strong> `Usable Idle Hours` = `Target Busy Hours` - `Current Busy Hours`. If this is negative (i.e., current utilization is already above target), the potential gain is zero.</li>
+                            <li><strong>Calculate Average Trip Efficiency:</strong> The simulation finds the `Average Tonnage per Trip` and `Average Duration per Trip` from all completed collections.</li>
+                            <li><strong>Calculate Potential:</strong> `Potential Extra Trips` = `Usable Idle Hours` / `Average Duration per Trip`. The final result is `Potential Extra Trips` * `Average Tonnage per Trip`, representing the additional tonnage that could be collected.</li>
+                        </ol>
+                    </li>
+                    <li>
+                        <strong>Average Station Wait Time:</strong> This chart measures the total time from request to truck arrival.
+                        <ol class="list-decimal pl-6 mt-1">
+                           <li><strong>Log Timestamps:</strong> When a station creates a request, the simulation logs the `request_hour`. When a truck is assigned, the `assignment_hour` is noted.</li>
+                           <li><strong>Calculate Arrival Time:</strong> The truck's physical arrival time at the station is calculated: `arrival_hour` = `assignment_hour` + `travel_time_to_station`.</li>
+                           <li><strong>Calculate Total Wait Time:</strong> For each collection, `Total Wait Time` = `arrival_hour` - `request_hour`.</li>
+                           <li><strong>Average Results:</strong> After the simulation, the engine averages these total wait times for each station.</li>
+                        </ol>
+                    </li>
+                    <li>
+                        <strong>Hourly Truck Activity:</strong> This graph shows the operational rhythm of the workday.
+                        <ol class="list-decimal pl-6 mt-1">
+                            <li><strong>Track Activity:</strong> The simulation uses a 24-element array (one for each hour). For every hour of the simulation, it increments the counter for the current hour if a truck is busy.</li>
+                            <li><strong>Normalize Data:</strong> At the end, each hourly total is divided by the number of simulation days to get the `daily average of active trucks` for each hour. This visualizes peak and off-peak operational times.</li>
+                        </ol>
+                    </li>
+                </ul>
+
+                <h3 class="font-semibold text-gray-700 mt-6">Key Assumptions for this Model</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><strong>Sufficient Truck Capacity:</strong> The model assumes that any single truck has enough capacity to collect all the accumulated waste from any single station in one trip. The truck's capacity is not a constraint in this "As-Is" direct shipment model.</li>
+                    <li><strong>Direct Shipment Only:</strong> The simulation strictly follows a "one trip, one station" rule. A truck always returns to the garage after visiting a single station and does not perform multi-stop routes.</li>
+                    <li><strong>Constant Waste Rate:</strong> The simulation uses a fixed, average daily waste accumulation rate for each station. It does not account for daily or weekly fluctuations (e.g., more waste on weekends).</li>
+                    <li><strong>No Seasonality:</strong> The model does not consider seasonal effects that might increase or decrease waste generation over longer periods.</li>
+                    <li><strong>Perfect Information:</strong> The system instantly knows when a station reaches its fill level trigger. There are no communication delays between the station and the central depot.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA SECTION ---
+        const stationsData = [
+            { station_name: 'Абай', daily_rate_kg: 202.8, max_capacity_kg: 1018.66 },
+            { station_name: 'АЛИХАНОВА', daily_rate_kg: 330.8, max_capacity_kg: 1185.6 },
+            { station_name: 'АРБА', daily_rate_kg: 113.8, max_capacity_kg: 937.4 },
+            { station_name: 'ГОРНЯК', daily_rate_kg: 191.0, max_capacity_kg: 1196.7 },
+            { station_name: 'КАЙРАТ', daily_rate_kg: 286.9, max_capacity_kg: 968.4 },
+            { station_name: 'ПРИШАХТИН', daily_rate_kg: 226.7, max_capacity_kg: 1040.0 },
+            { station_name: 'САРАНЬ', daily_rate_kg: 93.2, max_capacity_kg: 986.3 },
+            { station_name: 'СОРТИРОВК', daily_rate_kg: 443.5, max_capacity_kg: 1074.8 },
+            { station_name: '6 МКР-Н Т', daily_rate_kg: 141.2, max_capacity_kg: 1025.8 },
+            { station_name: 'ШАХТИНСК', daily_rate_kg: 121.5, max_capacity_kg: 954.1 },
+            { station_name: 'Экспресс-Темиртау', daily_rate_kg: 202.8, max_capacity_kg: 1018.66 },
+            { station_name: 'СТЕПНОЙ', daily_rate_kg: 79.4, max_capacity_kg: 817.5 }
+        ];
+
+        const timeMatrixHours = {
+            'Абай': { 'Абай': 0.0, 'АЛИХАНОВА': 0.9758836309, 'АРБА': 0.8856646685, 'ГОРНЯК': 1.421084325, 'КАЙРАТ': 1.24672432, 'ПРИШАХТИН': 1.269748816, 'САРАНЬ': 0.7354071993, 'СОРТИРОВК': 1.694524349, '6 МКР-Н Т': 1.746566766, 'ШАХТИНСК': 0.7812510867, 'Экспресс-Темиртау': 1.817841172, 'СТЕПНОЙ': 0.9819329877, 'Garage': 1.022462959 },
+            'АЛИХАНОВА': { 'Абай': 0.9758836309, 'АЛИХАНОВА': 0.0, 'АРБА': 0.1156011684, 'ГОРНЯК': 0.4452061424, 'КАЙРАТ': 0.2783180373, 'ПРИШАХТИН': 0.490636413, 'САРАНЬ': 0.8256336495, 'СОРТИРОВК': 0.734658126, '6 МКР-Н Т': 1.045384755, 'ШАХТИНСК': 1.419618059, 'Экспресс-Темиртау': 1.111815124, 'СТЕПНОЙ': 0.1362703816, 'Garage': 0.09088669528 },
+            'АРБА': { 'Абай': 0.8856646685, 'АЛИХАНОВА': 0.1156011684, 'АРБА': 0.0, 'ГОРНЯК': 0.4001097621, 'КАЙРАТ': 0.233221657, 'ПРИШАХТИН': 0.4357597143, 'САРАНЬ': 0.7354146873, 'СОРТИРОВК': 0.8438036118, '6 МКР-Н Т': 1.151985572, 'ШАХТИНСК': 1.329399097, 'Экспресс-Темиртау': 1.21841604, 'СТЕПНОЙ': 0.181366762, 'Garage': 0.1359830757 },
+            'ГОРНЯК': { 'Абай': 1.421084325, 'АЛИХАНОВА': 0.4452061424, 'АРБА': 0.4001097621, 'ГОРНЯК': 0.0, 'КАЙРАТ': 0.1668881051, 'ПРИШАХТИН': 0.3340571996, 'САРАНЬ': 1.109153068, 'СОРТИРОВК': 0.3280372039, '6 МКР-Н Т': 0.9097104383, 'ШАХТИНСК': 1.764824199, 'Экспресс-Темиртаu': 0.9761408091, 'СТЕПНОЙ': 0.3089357604, 'Garage': 0.3543194468 },
+            'КАЙРАТ': { 'Абай': 1.24672432, 'АЛИХАНОВА': 0.2783180373, 'АРБА': 0.233221657, 'ГОРНЯК': 0.1668881051, 'КАЙРАТ': 0.0, 'ПРИШАХТИН': 0.3115089844, 'САРАНЬ': 0.942264963, 'СОРТИРОВК': 0.5161420472, '6 МКР-Н Т': 1.012503813, 'ШАХТИНСК': 1.597936094, 'Экспресс-Темиртау': 1.07893419, 'СТЕПНОЙ': 0.1420476553, 'Garage': 0.1874313417 },
+            'ПРИШАХТИН': { 'Абай': 1.269748816, 'АЛИХАНОВА': 0.490636413, 'АРБА': 0.4357597143, 'ГОРНЯК': 0.3340571996, 'КАЙРАТ': 0.3115089844, 'ПРИШАХТИН': 0.0, 'САРАНЬ': 1.16315256, 'СОРТИРОВК': 0.4447725126, '6 МКР-Н Т': 0.697961527, 'ШАХТИНСК': 1.755370215, 'Экспресс-Темиртау': 0.7643918958, 'СТЕПНОЙ': 0.4455163339, 'Garage': 0.4909000203 },
+            'САРАНЬ': { 'Абай': 0.7354071993, 'АЛИХАНОВА': 0.8256336495, 'АРБА': 0.7354146873, 'ГОРНЯК': 1.109153068, 'КАЙРАТ': 0.942264963, 'ПРИШАХТИН': 1.16315256, 'САРАНЬ': 0.0, 'СОРТИРОВК': 1.243777424, '6 МКР-Н Т': 1.396316785, 'ШАХТИНСК': 0.4700011056, 'Экспресс-Темиртау': 1.467591787, 'СТЕПНОЙ': 0.8316830065, 'Garage': 0.8722129753 },
+            'СОРТИРОВК': { 'Абай': 1.694524349, 'АЛИХАНОВА': 0.734658126, 'АРБА': 0.8438036118, 'ГОРНЯК': 0.3280372039, 'КАЙРАТ': 0.5161420472, 'ПРИШАХТИН': 0.4447725126, 'САРАНЬ': 1.243777424, 'СОРТИРОВК': 0.0, '6 МКР-Н Т': 0.7344279207, 'ШАХТИНСК': 1.982253137, 'Экспресс-Темиртау': 0.6868853951, 'СТЕПНОЙ': 0.8061114358, 'Garage': 0.7725467485 },
+            '6 МКР-Н Т': { 'Абай': 1.746566766, 'АЛИХАНОВА': 1.045384755, 'АРБА': 1.151985572, 'ГОРНЯК': 0.9097104383, 'КАЙРАТ': 1.012503813, 'ПРИШАХТИН': 0.697961527, 'САРАНЬ': 1.396316785, 'СОРТИРОВК': 0.7344279207, '6 МКР-Н Т': 0.0, 'ШАХТИНСК': 2.03429555, 'Экспресс-Темиртау': 0.1471749568, 'СТЕПНОЙ': 1.113439391, 'Garage': 1.079874704 },
+            'ШАХТИНСК': { 'Абай': 0.7812510867, 'АЛИХАНОВА': 1.419618059, 'АРБА': 1.329399097, 'ГОРНЯК': 1.764824199, 'КАЙРАТ': 1.597936094, 'ПРИШАХТИН': 1.755370215, 'САРАНЬ': 0.4700011056, 'СОРТИРОВК': 1.982253137, '6 МКР-Н Т': 2.03429555, 'ШАХТИНСК': 0.0, 'Экспресс-Темиртау': 2.105569961, 'СТЕПНОЙ': 1.425667416, 'Garage': 1.466197385 },
+            'Экспресс-Темиртау': { 'Абай': 1.817841172, 'АЛИХАНОВА': 1.111815124, 'АРБА': 1.21841604, 'ГОРНЯК': 0.9761408091, 'КАЙРАТ': 1.07893419, 'ПРИШАХТИН': 0.7643918958, 'САРАНЬ': 1.467591787, 'СОРТИРОВК': 0.6868853951, '6 МКР-Н Т': 0.1471749568, 'ШАХТИНСК': 2.105569961, 'Экспресс-Темиртау': 0.0, 'СТЕПНОЙ': 1.17986986, 'Garage': 1.146305173 },
+            'СТЕПНОЙ': { 'Абай': 0.9819329877, 'АЛИХАНОВА': 0.1362703816, 'АРБА': 0.181366762, 'ГОРНЯК': 0.3089357604, 'КАЙРАТ': 0.1420476553, 'ПРИШАХТИН': 0.4455163339, 'САРАНЬ': 0.8316830065, 'СОРТИРОВК': 0.8061114358, '6 МКР-Н Т': 1.113439391, 'ШАХТИНСК': 1.425667416, 'Экспресс-Темиртау': 1.17986986, 'СТЕПНОЙ': 0.0, 'Garage': 0.04538368642 },
+            'Garage': { 'Абай': 1.022462959, 'АЛИХАНОВА': 0.09088669528, 'АРБА': 0.1359830757, 'ГОРНЯК': 0.3543194468, 'КАЙРАТ': 0.1874313417, 'ПРИШАХТИН': 0.4909000203, 'САРАНЬ': 0.8722129753, 'СОРТИРОВК': 0.7725467485, '6 МКР-Н Т': 1.079874704, 'ШАХТИНСК': 1.466197385, 'Экспресс-Темиртау': 1.146305173, 'СТЕПНОЙ': 0.04538368642, 'Garage': 0.0 }
+        };
+        const GARAGE_NAME = 'Garage';
+
+        // --- DOM Elements ---
+        const runBtn = document.getElementById('runSimulationBtn');
+        const totalWasteEl = document.getElementById('totalWaste');
+        const avgUtilizationEl = document.getElementById('avgUtilization');
+        const totalFailuresEl = document.getElementById('totalFailures');
+        const potentialTonnageEl = document.getElementById('potentialTonnage');
+        const loaderContainer = document.getElementById('loaderContainer');
+        const chartsContainer = document.getElementById('chartsContainer');
+        const paramsToggle = document.getElementById('paramsToggle');
+        const stationsToggle = document.getElementById('stationsToggle');
+        const parametersView = document.getElementById('parametersView');
+        const stationsView = document.getElementById('stationsView');
+
+        let utilizationChartInstance, failuresChartInstance, waitTimeChartInstance, hourlyActivityChartInstance;
+
+        // --- SIMULATION ENGINE ---
+        function runSimulation() {
+            const params = {
+                SIMULATION_DAYS: parseInt(document.getElementById('simulationDays').value),
+                NUM_TRUCKS: parseInt(document.getElementById('numTrucks').value),
+                COLLECTION_TRIGGER_PERCENT: parseInt(document.getElementById('triggerPercent').value) / 100,
+                WORK_START_HOUR: parseInt(document.getElementById('workStart').value),
+                WORK_END_HOUR: parseInt(document.getElementById('workEnd').value),
+                LOADING_TIME_HOURS: parseInt(document.getElementById('loadingTime').value) / 60,
+                UNLOADING_TIME_HOURS: parseInt(document.getElementById('unloadingTime').value) / 60,
+                TARGET_UTILIZATION: parseInt(document.getElementById('targetUtilization').value) / 100,
+            };
+
+            const simTotalHours = params.SIMULATION_DAYS * 24;
+            const workdayHours = params.WORK_END_HOUR - params.WORK_START_HOUR;
+
+            let ecostations = JSON.parse(JSON.stringify(stationsData));
+            ecostations.forEach(s => {
+                s.current_waste_kg = 0.0;
+                s.hourly_rate_kg = workdayHours > 0 ? s.daily_rate_kg / workdayHours : 0;
+            });
+
+            let truckStatus = Array.from({ length: params.NUM_TRUCKS }, (_, i) => ({
+                truck_id: i + 1, is_busy: false, busy_until_hour: 0, total_work_hours: 0.0, trips_made: 0
+            }));
+
+            let simulationLog = [];
+            let collection_queue = [];
+            let hourlyActivity = Array(24).fill(0);
+
+            for (let hour = 0; hour < simTotalHours; hour++) {
+                const hour_of_day = hour % 24;
+                const is_working_hour = hour_of_day >= params.WORK_START_HOUR && hour_of_day < params.WORK_END_HOUR;
+
+                if (is_working_hour) {
+                    ecostations.forEach(s => s.current_waste_kg += s.hourly_rate_kg);
+                }
+
+                ecostations.forEach(station => {
+                    if (station.current_waste_kg > station.max_capacity_kg) {
+                        if (collection_queue.some(req => req.station_name === station.station_name)) {
+                            simulationLog.push({ event: 'SERVICE_FAILURE', station_name: station.station_name });
+                        }
+                    }
+                    if (station.current_waste_kg >= station.max_capacity_kg * params.COLLECTION_TRIGGER_PERCENT) {
+                        if (!collection_queue.some(req => req.station_name === station.station_name)) {
+                            collection_queue.push({ station_name: station.station_name, request_hour: hour });
+                        }
+                    }
+                });
+
+                truckStatus.forEach(truck => {
+                    if (truck.busy_until_hour <= hour) truck.is_busy = false;
+                    if (truck.is_busy) hourlyActivity[hour_of_day]++;
+                });
+
+                if (collection_queue.length > 0 && is_working_hour) {
+                    collection_queue.sort((a, b) => a.request_hour - b.request_hour);
+
+                    for (let i = collection_queue.length - 1; i >= 0; i--) {
+                        const request = collection_queue[i];
+                        const availableTruck = truckStatus.find(t => !t.is_busy);
+                        if (!availableTruck) break;
+
+                        const station_name = request.station_name;
+                        const go_time = timeMatrixHours[GARAGE_NAME][station_name];
+                        const return_time = timeMatrixHours[station_name][GARAGE_NAME];
+                        const total_trip_duration = go_time + params.LOADING_TIME_HOURS + return_time + params.UNLOADING_TIME_HOURS;
+                        
+                        const remaining_work_hours_today = params.WORK_END_HOUR - hour_of_day;
+
+                        if (total_trip_duration < remaining_work_hours_today) {
+                            const assignment_hour = hour;
+                            const arrival_hour = assignment_hour + go_time;
+                            const trip_end_hour = hour + Math.ceil(total_trip_duration);
+                            
+                            availableTruck.is_busy = true;
+                            availableTruck.busy_until_hour = trip_end_hour;
+                            availableTruck.total_work_hours += total_trip_duration;
+                            availableTruck.trips_made += 1;
+
+                            const station = ecostations.find(s => s.station_name === station_name);
+                            const collected_amount = station.current_waste_kg;
+                            station.current_waste_kg = 0.0;
+
+                            simulationLog.push({
+                                event: 'COLLECTION',
+                                station_name: station_name,
+                                collected_kg: collected_amount,
+                                wait_time: arrival_hour - request.request_hour,
+                                trip_duration: total_trip_duration,
+                            });
+                            
+                            collection_queue.splice(i, 1);
+                        }
+                    }
+                }
+            }
+            
+            // --- Result Calculation ---
+            const collection_logs = simulationLog.filter(log => log.event === 'COLLECTION');
+            const total_available_hours = params.NUM_TRUCKS * params.SIMULATION_DAYS * workdayHours;
+            const total_busy_hours = truckStatus.reduce((sum, truck) => sum + truck.total_work_hours, 0);
+            const overall_utilization = (total_available_hours > 0) ? (total_busy_hours / total_available_hours) * 100 : 0;
+            
+            truckStatus.forEach(truck => {
+                truck.utilization = (params.SIMULATION_DAYS * workdayHours > 0) ? (truck.total_work_hours / (params.SIMULATION_DAYS * workdayHours)) * 100 : 0;
+            });
+
+            const total_collected_waste_kg = collection_logs.reduce((sum, log) => sum + log.collected_kg, 0);
+            
+            const target_busy_hours = total_available_hours * params.TARGET_UTILIZATION;
+            const usable_idle_hours = Math.max(0, target_busy_hours - total_busy_hours);
+
+            const avg_trip_duration = collection_logs.length > 0 ? collection_logs.reduce((sum, log) => sum + log.trip_duration, 0) / collection_logs.length : 0;
+            const avg_waste_per_trip = collection_logs.length > 0 ? total_collected_waste_kg / collection_logs.length : 0;
+            const potential_extra_trips = avg_trip_duration > 0 ? usable_idle_hours / avg_trip_duration : 0;
+            const potential_tonnage_increase_kg = potential_extra_trips * avg_waste_per_trip;
+
+            const service_failures = simulationLog.filter(log => log.event === 'SERVICE_FAILURE');
+            const failures_by_station = service_failures.reduce((acc, failure) => {
+                acc[failure.station_name] = (acc[failure.station_name] || 0) + 1; return acc;
+            }, {});
+            
+            const wait_times = {};
+            collection_logs.forEach(log => {
+                if (!wait_times[log.station_name]) wait_times[log.station_name] = [];
+                wait_times[log.station_name].push(log.wait_time);
+            });
+            const avg_wait_times = {};
+            for (const station in wait_times) {
+                avg_wait_times[station] = wait_times[station].reduce((a, b) => a + b, 0) / wait_times[station].length;
+            }
+
+            const normalizedHourlyActivity = hourlyActivity.map(val => val / params.SIMULATION_DAYS);
+
+            return {
+                total_collected_waste_kg, overall_utilization, service_failures, truckStatus, failures_by_station,
+                potential_tonnage_increase_kg, avg_wait_times, normalizedHourlyActivity
+            };
+        }
+
+        // --- UI UPDATE ---
+        function updateUI(results) {
+            totalWasteEl.textContent = `${(results.total_collected_waste_kg / 1000).toFixed(2)} tons`;
+            avgUtilizationEl.textContent = `${results.overall_utilization.toFixed(2)} %`;
+            totalFailuresEl.textContent = results.service_failures.length;
+            potentialTonnageEl.textContent = `${(results.potential_tonnage_increase_kg / 1000).toFixed(2)} tons`;
+        }
+
+        function renderCharts(results) {
+            // Truck Utilization Chart
+            const utilCtx = document.getElementById('utilizationChart').getContext('2d');
+            if (utilizationChartInstance) utilizationChartInstance.destroy();
+            utilizationChartInstance = new Chart(utilCtx, {
+                type: 'bar',
+                data: {
+                    labels: results.truckStatus.map(t => `Truck ${t.truck_id}`),
+                    datasets: [{
+                        label: 'Utilization Rate (%)',
+                        data: results.truckStatus.map(t => t.utilization.toFixed(2)),
+                        backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Percentage (%)' } } }, plugins: { legend: { display: false } } }
+            });
+
+            // Wait Time Chart
+            const waitTimeCtx = document.getElementById('waitTimeChart').getContext('2d');
+            const waitTimeData = Object.entries(results.avg_wait_times).sort((a,b) => b[1] - a[1]);
+            if(waitTimeChartInstance) waitTimeChartInstance.destroy();
+            waitTimeChartInstance = new Chart(waitTimeCtx, {
+                type: 'bar',
+                data: {
+                    labels: waitTimeData.map(item => item[0]),
+                    datasets: [{
+                        label: 'Average Station Wait Time (hours)',
+                        data: waitTimeData.map(item => item[1].toFixed(2)),
+                        backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                    }]
+                },
+                options: { indexAxis: 'y', scales: { x: { beginAtZero: true, title: { display: true, text: 'Hours' } } }, plugins: { legend: { display: false } } }
+            });
+
+            // Hourly Activity Chart
+            const hourlyActivityCtx = document.getElementById('hourlyActivityChart').getContext('2d');
+            const workStart = parseInt(document.getElementById('workStart').value);
+            const workEnd = parseInt(document.getElementById('workEnd').value);
+            if(hourlyActivityChartInstance) hourlyActivityChartInstance.destroy();
+            hourlyActivityChartInstance = new Chart(hourlyActivityCtx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Average Busy Trucks per Hour',
+                        data: results.normalizedHourlyActivity,
+                        backgroundColor: (context) => {
+                            const hour = context.dataIndex;
+                            return (hour >= workStart && hour < workEnd) ? 'rgba(34, 197, 94, 0.8)' : 'rgba(203, 213, 225, 0.8)';
+                        }
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true, max: results.truckStatus.length, title: { display: true, text: 'Avg. Busy Trucks' } } }, plugins: { legend: { display: false } } }
+            });
+
+            // Service Failures Chart
+            const failuresCtx = document.getElementById('failuresChart').getContext('2d');
+            const failureData = Object.entries(results.failures_by_station).sort((a, b) => b[1] - a[1]);
+            if (failuresChartInstance) failuresChartInstance.destroy();
+            failuresChartInstance = new Chart(failuresCtx, {
+                type: 'bar',
+                data: {
+                    labels: failureData.map(item => item[0]),
+                    datasets: [{
+                        label: 'Overflow Count',
+                        data: failureData.map(item => item[1]),
+                        backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                    }]
+                },
+                options: { indexAxis: 'y', scales: { x: { beginAtZero: true, title: { display: true, text: 'Number of Failures' } } }, plugins: { legend: { display: false } } }
+            });
+        }
+        
+        function populateStationsTable() {
+            const tableBody = document.getElementById('stationsTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+            stationsData.forEach(station => {
+                const timeToFill = station.daily_rate_kg > 0 ? (station.max_capacity_kg / station.daily_rate_kg).toFixed(1) : 'N/A';
+                const monthlyTons = ((station.daily_rate_kg * 30) / 1000).toFixed(2);
+                const row = `
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${station.station_name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${station.daily_rate_kg.toFixed(1)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">${monthlyTons}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${station.max_capacity_kg.toFixed(1)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${timeToFill}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // --- EVENT LISTENERS ---
+        runBtn.addEventListener('click', () => {
+            chartsContainer.classList.add('hidden');
+            loaderContainer.classList.remove('hidden');
+            loaderContainer.classList.add('flex');
+            runBtn.disabled = true;
+            document.getElementById('runBtnText').textContent = 'Running...';
+
+            setTimeout(() => {
+                const results = runSimulation();
+                updateUI(results);
+                renderCharts(results);
+
+                chartsContainer.classList.remove('hidden');
+                loaderContainer.classList.add('hidden');
+                loaderContainer.classList.remove('flex');
+                runBtn.disabled = false;
+                document.getElementById('runBtnText').textContent = 'Run Simulation';
+            }, 100);
+        });
+        
+        paramsToggle.addEventListener('click', () => {
+            parametersView.classList.remove('hidden');
+            stationsView.classList.add('hidden');
+            paramsToggle.classList.add('toggle-btn-active');
+            paramsToggle.classList.remove('toggle-btn-inactive');
+            stationsToggle.classList.add('toggle-btn-inactive');
+            stationsToggle.classList.remove('toggle-btn-active');
+        });
+
+        stationsToggle.addEventListener('click', () => {
+            parametersView.classList.add('hidden');
+            stationsView.classList.remove('hidden');
+            stationsToggle.classList.add('toggle-btn-active');
+            stationsToggle.classList.remove('toggle-btn-inactive');
+            paramsToggle.classList.add('toggle-btn-inactive');
+            paramsToggle.classList.remove('toggle-btn-active');
+        });
+
+
+        window.addEventListener('load', () => {
+            populateStationsTable();
+            runBtn.click();
+        });
+    </script>
+</body>
+</html>
