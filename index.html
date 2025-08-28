@@ -101,7 +101,7 @@
                     </div>
                     <div>
                         <label for="workEnd" class="block text-sm font-medium text-gray-700">Workday End</label>
-                        <input type="number" id="workEnd" value="16" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="workEnd" value="15" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                     </div>
                     <div>
                         <label for="targetUtilization" class="block text-sm font-medium text-gray-700">Target Utilization (%)</label>
@@ -123,6 +123,7 @@
                             <tr>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Rate (kg)</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hourly Rate (kg)</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Output (tons)</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity (kg)</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time to Fill (days)</th>
@@ -158,6 +159,25 @@
                 </div>
             </div>
 
+            <!-- Simulation Results Table -->
+            <div id="resultsTableView" class="hidden bg-white p-6 rounded-xl shadow-md mb-8">
+                 <h2 class="text-xl font-bold text-gray-800 mb-4">Simulation Results by Station</h2>
+                 <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trips Made</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Collected (tons)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Rows will be inserted here by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Charts -->
             <div id="chartsContainer" class="space-y-8">
                  <div class="bg-white p-6 rounded-xl shadow-md">
@@ -165,7 +185,7 @@
                     <canvas id="utilizationChart"></canvas>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Average Station Wait Time (hours)</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Average Dispatch Delay (hours)</h3>
                     <canvas id="waitTimeChart"></canvas>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-md">
@@ -188,69 +208,56 @@
         
         <!-- Explanation Section -->
         <div class="mt-8 bg-white p-6 rounded-xl shadow-md">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">How the Simulation Works</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">How the Outputs are Calculated</h2>
             <div class="prose max-w-none text-gray-600">
+                <h3 class="font-semibold text-gray-700 mt-4">Core Simulation Logic</h3>
                 <p>The simulation engine is built on a loop that advances time in hourly increments. For a 60-day simulation, this loop runs 1,440 times (60 days * 24 hours). In each hourly step, the following sequence of events occurs:</p>
-                <h3 class="font-semibold text-gray-700 mt-4">1. Waste Accumulation</h3>
-                <ul class="list-disc pl-5 space-y-1">
-                    <li>The engine checks if the current hour is within working hours (e.g., 08:00-16:00).</li>
-                    <li>If it is, each station's <strong>current_waste_kg</strong> is increased by its hourly accumulation rate. Outside of working hours, waste levels remain constant. This strictly applies the "8-Hour World" logic.</li>
-                </ul>
-                <h3 class="font-semibold text-gray-700 mt-4">2. Demand Trigger & Capacity Control</h3>
-                <ul class="list-disc pl-5 space-y-1">
-                    <li>After waste is added, the engine checks each station.</li>
-                    <li>If a station's current waste exceeds the defined trigger percentage (e.g., 85%), a "collection request" is created and added to the <strong>collection_queue</strong>, if one doesn't already exist for that station.</li>
-                    <li>Simultaneously, if a station's waste exceeds 100% capacity while it's already waiting for collection, a "Service Failure" (overflow) is logged.</li>
-                </ul>
-                <h3 class="font-semibold text-gray-700 mt-4">3. Truck Assignment Logic (The Critical Step)</h3>
-                <ul class="list-disc pl-5 space-y-1">
-                    <li>The engine checks for pending requests in the collection queue.</li>
-                    <li>It looks for an available truck (where <strong>is_busy = false</strong>).</li>
-                    <li>It takes the oldest request from the queue and calculates a "trip plan":
-                        <ul class="list-disc pl-6">
-                           <li>Time from Garage to Station (read from the pre-calculated time matrix).</li>
-                           <li>Loading time at the station (from parameters).</li>
-                           <li>Time from Station back to Garage.</li>
-                           <li>Unloading time at the garage.</li>
-                        </ul>
-                    </li>
-                    <li>It sums these to get the <strong>total trip duration</strong>.</li>
-                    <li><strong>"Is there enough time?" Check:</strong> The engine verifies if this total trip duration is less than the remaining time until the end of the current workday. If the trip cannot be completed before the workday ends, the assignment is not made.</li>
-                    <li>If an available truck is found and the trip can be completed within work hours, the assignment is made:
-                        <ul class="list-disc pl-6">
-                           <li>The truck is marked as "busy," and its next availability time (<strong>busy_until_hour</strong>) is calculated.</li>
-                           <li>The station's waste level is reset to zero.</li>
-                           <li>Data such as the amount of waste collected is logged.</li>
-                           <li>The request is removed from the collection queue.</li>
-                        </ul>
-                    </li>
-                </ul>
-
-                <h3 class="font-semibold text-gray-700 mt-6">How the New Outputs are Calculated</h3>
+                <ol class="list-decimal pl-5 space-y-2">
+                    <li><strong>Waste Accumulation:</strong> The engine checks if the current day is Sunday. If not, and if the current hour is within effective work hours (e.g., 08:00-15:00), each station's <strong>current_waste_kg</strong> is increased. No waste accumulates on Sundays or outside work hours.</li>
+                    <li><strong>Demand Trigger & Capacity Control:</strong> On workdays, if a station's waste exceeds the defined trigger percentage, a "collection request" is created. If a station's waste exceeds 100% capacity while it's already waiting, a "Service Failure" is logged.</li>
+                    <li><strong>Truck Assignment Logic (The Critical Step):</strong> The engine only attempts to assign trucks during effective work hours on workdays. It takes the oldest request and calculates the <strong>total trip duration</strong>. If the trip can be completed before the workday ends, a truck is assigned. The truck will complete its trip even if it finishes after work hours. No new trips are assigned after work hours or on Sundays.</li>
+                </ol>
+                
+                <h3 class="font-semibold text-gray-700 mt-6">Chart & Metric Calculations</h3>
                  <ul class="list-disc pl-5 space-y-2">
+                    <li>
+                        <strong>Truck Utilization Rate:</strong> This chart shows the percentage of available work hours that each truck spent actively on a trip.
+                        <ol class="list-decimal pl-6 mt-1">
+                            <li><strong>Calculate Total Available Work Hours:</strong> For each truck, this is `Number of Workdays (excluding Sundays)` * `Effective Daily Work Hours`.</li>
+                            <li><strong>Track Total Busy Hours:</strong> During the simulation, every time a truck completes a trip, the `total_trip_duration` is added to that truck's `total_work_hours`.</li>
+                            <li><strong>Calculate Percentage:</strong> After the simulation, each truck's utilization is calculated as (`Total Work Hours` / `Total Available Work Hours`) * 100.</li>
+                        </ol>
+                    </li>
                     <li>
                         <strong>Potential Additional Tonnage:</strong> This metric quantifies the opportunity cost of idle truck time against a configurable target.
                         <ol class="list-decimal pl-6 mt-1">
                             <li><strong>Calculate Target Busy Time:</strong> `Target Busy Hours` = `Total Available Work Hours` * (`Target Utilization %` / 100).</li>
-                            <li><strong>Find Usable Idle Time:</strong> `Usable Idle Hours` = `Target Busy Hours` - `Current Busy Hours`. If this is negative (i.e., current utilization is already above target), the potential gain is zero.</li>
+                            <li><strong>Find Usable Idle Time:</strong> `Usable Idle Hours` = `Target Busy Hours` - `Current Busy Hours`. If this is negative, the potential gain is zero.</li>
                             <li><strong>Calculate Average Trip Efficiency:</strong> The simulation finds the `Average Tonnage per Trip` and `Average Duration per Trip` from all completed collections.</li>
-                            <li><strong>Calculate Potential:</strong> `Potential Extra Trips` = `Usable Idle Hours` / `Average Duration per Trip`. The final result is `Potential Extra Trips` * `Average Tonnage per Trip`, representing the additional tonnage that could be collected.</li>
+                            <li><strong>Calculate Potential:</strong> `Potential Extra Trips` = `Usable Idle Hours` / `Average Duration per Trip`. The final result is `Potential Extra Trips` * `Average Tonnage per Trip`.</li>
                         </ol>
                     </li>
                     <li>
-                        <strong>Average Station Wait Time:</strong> This chart measures the total time from request to truck arrival.
+                        <strong>Average Dispatch Delay:</strong> This chart measures the time a request waits in the queue before a truck is dispatched, counting only effective work hours. It isolates system delay from travel time.
                         <ol class="list-decimal pl-6 mt-1">
-                           <li><strong>Log Timestamps:</strong> When a station creates a request, the simulation logs the `request_hour`. When a truck is assigned, the `assignment_hour` is noted.</li>
-                           <li><strong>Calculate Arrival Time:</strong> The truck's physical arrival time at the station is calculated: `arrival_hour` = `assignment_hour` + `travel_time_to_station`.</li>
-                           <li><strong>Calculate Total Wait Time:</strong> For each collection, `Total Wait Time` = `arrival_hour` - `request_hour`.</li>
-                           <li><strong>Average Results:</strong> After the simulation, the engine averages these total wait times for each station.</li>
+                           <li><strong>Log Timestamps:</strong> When a station creates a request, the simulation logs the `request_hour`. When a truck is assigned to that request, it logs the `assignment_hour`.</li>
+                           <li><strong>Calculate Effective Delay:</strong> For each collection, a special function iterates from the request hour to the assignment hour, counting only the hours that fall within the effective workday (e.g., 08:00-15:00) and are not Sundays. This correctly excludes nights and weekends from the delay calculation.</li>
+                           <li><strong>Average Results:</strong> After the simulation, the engine averages these calculated delays for each station, highlighting true operational bottlenecks.</li>
                         </ol>
                     </li>
                     <li>
                         <strong>Hourly Truck Activity:</strong> This graph shows the operational rhythm of the workday.
                         <ol class="list-decimal pl-6 mt-1">
                             <li><strong>Track Activity:</strong> The simulation uses a 24-element array (one for each hour). For every hour of the simulation, it increments the counter for the current hour if a truck is busy.</li>
-                            <li><strong>Normalize Data:</strong> At the end, each hourly total is divided by the number of simulation days to get the `daily average of active trucks` for each hour. This visualizes peak and off-peak operational times.</li>
+                            <li><strong>Normalize Data:</strong> At the end, each hourly total is divided by the number of workdays to get the `daily average of active trucks` for each hour.</li>
+                        </ol>
+                    </li>
+                     <li>
+                        <strong>Service Failures by Station:</strong> This chart counts the number of times a station's capacity was exceeded while it was already waiting for a collection.
+                        <ol class="list-decimal pl-6 mt-1">
+                            <li><strong>Log a Failure:</strong> In every hourly step, after waste accumulates, the engine checks if a station's `current_waste_kg` is greater than its `max_capacity_kg`.</li>
+                            <li><strong>Check Condition:</strong> A failure is only logged if the overflowing station *already has a pending collection request* in the `collection_queue`.</li>
+                            <li><strong>Aggregate Results:</strong> At the end of the simulation, the engine counts the total number of failure logs for each station.</li>
                         </ol>
                     </li>
                 </ul>
@@ -259,9 +266,9 @@
                 <ul class="list-disc pl-5 space-y-1">
                     <li><strong>Sufficient Truck Capacity:</strong> The model assumes that any single truck has enough capacity to collect all the accumulated waste from any single station in one trip. The truck's capacity is not a constraint in this "As-Is" direct shipment model.</li>
                     <li><strong>Direct Shipment Only:</strong> The simulation strictly follows a "one trip, one station" rule. A truck always returns to the garage after visiting a single station and does not perform multi-stop routes.</li>
-                    <li><strong>Constant Waste Rate:</strong> The simulation uses a fixed, average daily waste accumulation rate for each station. It does not account for daily or weekly fluctuations (e.g., more waste on weekends).</li>
+                    <li><strong>Constant Waste Rate:</strong> The simulation uses a fixed, average daily waste accumulation rate for each station. It does not account for daily or weekly fluctuations.</li>
                     <li><strong>No Seasonality:</strong> The model does not consider seasonal effects that might increase or decrease waste generation over longer periods.</li>
-                    <li><strong>Perfect Information:</strong> The system instantly knows when a station reaches its fill level trigger. There are no communication delays between the station and the central depot.</li>
+                    <li><strong>Perfect Information:</strong> The system instantly knows when a station reaches its fill level trigger. There are no communication delays.</li>
                 </ul>
             </div>
         </div>
@@ -270,18 +277,18 @@
     <script>
         // --- DATA SECTION ---
         const stationsData = [
-            { station_name: 'Абай', daily_rate_kg: 202.8, max_capacity_kg: 1018.66 },
-            { station_name: 'АЛИХАНОВА', daily_rate_kg: 330.8, max_capacity_kg: 1185.6 },
-            { station_name: 'АРБА', daily_rate_kg: 113.8, max_capacity_kg: 937.4 },
-            { station_name: 'ГОРНЯК', daily_rate_kg: 191.0, max_capacity_kg: 1196.7 },
-            { station_name: 'КАЙРАТ', daily_rate_kg: 286.9, max_capacity_kg: 968.4 },
-            { station_name: 'ПРИШАХТИН', daily_rate_kg: 226.7, max_capacity_kg: 1040.0 },
-            { station_name: 'САРАНЬ', daily_rate_kg: 93.2, max_capacity_kg: 986.3 },
-            { station_name: 'СОРТИРОВК', daily_rate_kg: 443.5, max_capacity_kg: 1074.8 },
-            { station_name: '6 МКР-Н Т', daily_rate_kg: 141.2, max_capacity_kg: 1025.8 },
-            { station_name: 'ШАХТИНСК', daily_rate_kg: 121.5, max_capacity_kg: 954.1 },
-            { station_name: 'Экспресс-Темиртау', daily_rate_kg: 202.8, max_capacity_kg: 1018.66 },
-            { station_name: 'СТЕПНОЙ', daily_rate_kg: 79.4, max_capacity_kg: 817.5 }
+            { station_name: 'СОРТИРОВК', daily_rate_kg: 487.1, max_capacity_kg: 1500 },
+            { station_name: 'АЛИХАНОВА', daily_rate_kg: 338.2, max_capacity_kg: 1500 },
+            { station_name: 'КАЙРАТ', daily_rate_kg: 290.5, max_capacity_kg: 1500 },
+            { station_name: 'ПРИШАХТИН', daily_rate_kg: 231.8, max_capacity_kg: 1500 },
+            { station_name: 'ГОРНЯК', daily_rate_kg: 193.3, max_capacity_kg: 1500 },
+            { station_name: '6 МКР-Н Т', daily_rate_kg: 148.2, max_capacity_kg: 1500 },
+            { station_name: 'ШАХТИНСК', daily_rate_kg: 125.8, max_capacity_kg: 1500 },
+            { station_name: 'АРБА', daily_rate_kg: 115.3, max_capacity_kg: 1500 },
+            { station_name: 'Абай', daily_rate_kg: 98.7, max_capacity_kg: 1500 },
+            { station_name: 'САРАНЬ', daily_rate_kg: 94.1, max_capacity_kg: 1500 },
+            { station_name: 'Экспресс-Темиртау', daily_rate_kg: 85.4, max_capacity_kg: 1500 },
+            { station_name: 'СТЕПНОЙ', daily_rate_kg: 80.8, max_capacity_kg: 1500 }
         ];
 
         const timeMatrixHours = {
@@ -313,8 +320,22 @@
         const stationsToggle = document.getElementById('stationsToggle');
         const parametersView = document.getElementById('parametersView');
         const stationsView = document.getElementById('stationsView');
+        const resultsTableView = document.getElementById('resultsTableView');
 
         let utilizationChartInstance, failuresChartInstance, waitTimeChartInstance, hourlyActivityChartInstance;
+        
+        // --- HELPER FUNCTION for wait time calculation ---
+        function calculateEffectiveWaitHours(request_hour, assignment_hour, work_start, work_end) {
+            let effective_wait = 0;
+            for (let h = request_hour; h < assignment_hour; h++) {
+                const day_of_week = Math.floor(h / 24) % 7; // 0=Mon, 6=Sun
+                const hour_of_day = h % 24;
+                if (day_of_week !== 6 && hour_of_day >= work_start && hour_of_day < work_end) {
+                    effective_wait++;
+                }
+            }
+            return effective_wait;
+        }
 
         // --- SIMULATION ENGINE ---
         function runSimulation() {
@@ -329,13 +350,13 @@
                 TARGET_UTILIZATION: parseInt(document.getElementById('targetUtilization').value) / 100,
             };
 
+            const effectiveWorkdayHours = params.WORK_END_HOUR - params.WORK_START_HOUR;
             const simTotalHours = params.SIMULATION_DAYS * 24;
-            const workdayHours = params.WORK_END_HOUR - params.WORK_START_HOUR;
 
             let ecostations = JSON.parse(JSON.stringify(stationsData));
             ecostations.forEach(s => {
                 s.current_waste_kg = 0.0;
-                s.hourly_rate_kg = workdayHours > 0 ? s.daily_rate_kg / workdayHours : 0;
+                s.hourly_rate_kg = effectiveWorkdayHours > 0 ? s.daily_rate_kg / effectiveWorkdayHours : 0;
             });
 
             let truckStatus = Array.from({ length: params.NUM_TRUCKS }, (_, i) => ({
@@ -347,32 +368,39 @@
             let hourlyActivity = Array(24).fill(0);
 
             for (let hour = 0; hour < simTotalHours; hour++) {
+                const day_index = Math.floor(hour / 24);
+                const day_of_week = day_index % 7; // 0=Mon, 6=Sun
+                const is_workday = day_of_week !== 6;
+
                 const hour_of_day = hour % 24;
                 const is_working_hour = hour_of_day >= params.WORK_START_HOUR && hour_of_day < params.WORK_END_HOUR;
 
-                if (is_working_hour) {
+                if (is_working_hour && is_workday) {
                     ecostations.forEach(s => s.current_waste_kg += s.hourly_rate_kg);
                 }
+                
+                if(is_workday){
+                    ecostations.forEach(station => {
+                        if (station.current_waste_kg > station.max_capacity_kg) {
+                            if (collection_queue.some(req => req.station_name === station.station_name)) {
+                                simulationLog.push({ event: 'SERVICE_FAILURE', station_name: station.station_name });
+                            }
+                        }
+                        if (station.current_waste_kg >= station.max_capacity_kg * params.COLLECTION_TRIGGER_PERCENT) {
+                            if (!collection_queue.some(req => req.station_name === station.station_name)) {
+                                collection_queue.push({ station_name: station.station_name, request_hour: hour });
+                            }
+                        }
+                    });
+                }
 
-                ecostations.forEach(station => {
-                    if (station.current_waste_kg > station.max_capacity_kg) {
-                        if (collection_queue.some(req => req.station_name === station.station_name)) {
-                            simulationLog.push({ event: 'SERVICE_FAILURE', station_name: station.station_name });
-                        }
-                    }
-                    if (station.current_waste_kg >= station.max_capacity_kg * params.COLLECTION_TRIGGER_PERCENT) {
-                        if (!collection_queue.some(req => req.station_name === station.station_name)) {
-                            collection_queue.push({ station_name: station.station_name, request_hour: hour });
-                        }
-                    }
-                });
 
                 truckStatus.forEach(truck => {
                     if (truck.busy_until_hour <= hour) truck.is_busy = false;
                     if (truck.is_busy) hourlyActivity[hour_of_day]++;
                 });
 
-                if (collection_queue.length > 0 && is_working_hour) {
+                if (collection_queue.length > 0 && is_working_hour && is_workday) {
                     collection_queue.sort((a, b) => a.request_hour - b.request_hour);
 
                     for (let i = collection_queue.length - 1; i >= 0; i--) {
@@ -389,7 +417,6 @@
 
                         if (total_trip_duration < remaining_work_hours_today) {
                             const assignment_hour = hour;
-                            const arrival_hour = assignment_hour + go_time;
                             const trip_end_hour = hour + Math.ceil(total_trip_duration);
                             
                             availableTruck.is_busy = true;
@@ -401,11 +428,13 @@
                             const collected_amount = station.current_waste_kg;
                             station.current_waste_kg = 0.0;
 
+                            const dispatch_delay = calculateEffectiveWaitHours(request.request_hour, assignment_hour, params.WORK_START_HOUR, params.WORK_END_HOUR);
+
                             simulationLog.push({
                                 event: 'COLLECTION',
                                 station_name: station_name,
                                 collected_kg: collected_amount,
-                                wait_time: arrival_hour - request.request_hour,
+                                dispatch_delay: dispatch_delay,
                                 trip_duration: total_trip_duration,
                             });
                             
@@ -416,13 +445,20 @@
             }
             
             // --- Result Calculation ---
+            let num_work_days = 0;
+            for (let d = 0; d < params.SIMULATION_DAYS; d++) {
+                if (d % 7 !== 6) { // Assuming day 0 is Monday, day 6 is Sunday
+                    num_work_days++;
+                }
+            }
+
             const collection_logs = simulationLog.filter(log => log.event === 'COLLECTION');
-            const total_available_hours = params.NUM_TRUCKS * params.SIMULATION_DAYS * workdayHours;
+            const total_available_hours = params.NUM_TRUCKS * num_work_days * effectiveWorkdayHours;
             const total_busy_hours = truckStatus.reduce((sum, truck) => sum + truck.total_work_hours, 0);
             const overall_utilization = (total_available_hours > 0) ? (total_busy_hours / total_available_hours) * 100 : 0;
             
             truckStatus.forEach(truck => {
-                truck.utilization = (params.SIMULATION_DAYS * workdayHours > 0) ? (truck.total_work_hours / (params.SIMULATION_DAYS * workdayHours)) * 100 : 0;
+                truck.utilization = (num_work_days * effectiveWorkdayHours > 0) ? (truck.total_work_hours / (num_work_days * effectiveWorkdayHours)) * 100 : 0;
             });
 
             const total_collected_waste_kg = collection_logs.reduce((sum, log) => sum + log.collected_kg, 0);
@@ -443,18 +479,28 @@
             const wait_times = {};
             collection_logs.forEach(log => {
                 if (!wait_times[log.station_name]) wait_times[log.station_name] = [];
-                wait_times[log.station_name].push(log.wait_time);
+                wait_times[log.station_name].push(log.dispatch_delay);
             });
             const avg_wait_times = {};
             for (const station in wait_times) {
                 avg_wait_times[station] = wait_times[station].reduce((a, b) => a + b, 0) / wait_times[station].length;
             }
 
-            const normalizedHourlyActivity = hourlyActivity.map(val => val / params.SIMULATION_DAYS);
+            const normalizedHourlyActivity = hourlyActivity.map(val => val / num_work_days);
+            
+            const resultsByStation = {};
+            stationsData.forEach(s => {
+                resultsByStation[s.station_name] = { trips: 0, collected: 0 };
+            });
+            collection_logs.forEach(log => {
+                resultsByStation[log.station_name].trips++;
+                resultsByStation[log.station_name].collected += log.collected_kg;
+            });
+
 
             return {
                 total_collected_waste_kg, overall_utilization, service_failures, truckStatus, failures_by_station,
-                potential_tonnage_increase_kg, avg_wait_times, normalizedHourlyActivity
+                potential_tonnage_increase_kg, avg_wait_times, normalizedHourlyActivity, resultsByStation
             };
         }
 
@@ -464,6 +510,24 @@
             avgUtilizationEl.textContent = `${results.overall_utilization.toFixed(2)} %`;
             totalFailuresEl.textContent = results.service_failures.length;
             potentialTonnageEl.textContent = `${(results.potential_tonnage_increase_kg / 1000).toFixed(2)} tons`;
+        }
+        
+        function renderResultsTable(results) {
+            const tableBody = document.getElementById('resultsTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+            const sortedStations = Object.entries(results.resultsByStation).sort((a, b) => b[1].collected - a[1].collected);
+
+            sortedStations.forEach(([name, data]) => {
+                const row = `
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${data.trips}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">${(data.collected / 1000).toFixed(2)}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+            resultsTableView.classList.remove('hidden');
         }
 
         function renderCharts(results) {
@@ -492,7 +556,7 @@
                 data: {
                     labels: waitTimeData.map(item => item[0]),
                     datasets: [{
-                        label: 'Average Station Wait Time (hours)',
+                        label: 'Average Dispatch Delay (hours)',
                         data: waitTimeData.map(item => item[1].toFixed(2)),
                         backgroundColor: 'rgba(245, 158, 11, 0.8)',
                     }]
@@ -541,14 +605,17 @@
         
         function populateStationsTable() {
             const tableBody = document.getElementById('stationsTableBody');
+            const effectiveWorkHours = document.getElementById('workEnd').value - document.getElementById('workStart').value;
             tableBody.innerHTML = ''; // Clear existing rows
             stationsData.forEach(station => {
                 const timeToFill = station.daily_rate_kg > 0 ? (station.max_capacity_kg / station.daily_rate_kg).toFixed(1) : 'N/A';
                 const monthlyTons = ((station.daily_rate_kg * 30) / 1000).toFixed(2);
+                const hourlyRate = (station.daily_rate_kg / effectiveWorkHours).toFixed(1);
                 const row = `
                     <tr>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${station.station_name}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${station.daily_rate_kg.toFixed(1)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${hourlyRate}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">${monthlyTons}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${station.max_capacity_kg.toFixed(1)}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${timeToFill}</td>
@@ -561,6 +628,7 @@
         // --- EVENT LISTENERS ---
         runBtn.addEventListener('click', () => {
             chartsContainer.classList.add('hidden');
+            resultsTableView.classList.add('hidden');
             loaderContainer.classList.remove('hidden');
             loaderContainer.classList.add('flex');
             runBtn.disabled = true;
@@ -570,6 +638,7 @@
                 const results = runSimulation();
                 updateUI(results);
                 renderCharts(results);
+                renderResultsTable(results);
 
                 chartsContainer.classList.remove('hidden');
                 loaderContainer.classList.add('hidden');
