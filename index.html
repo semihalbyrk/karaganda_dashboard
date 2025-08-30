@@ -33,6 +33,16 @@
         .toggle-btn-inactive {
             color: #4b5563;
         }
+        .matrix-table td, .matrix-table th {
+            padding: 0.5rem;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+            font-size: 0.75rem;
+        }
+        .matrix-table th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -62,9 +72,10 @@
         <!-- Control Panel Section -->
         <div class="bg-white p-6 rounded-xl shadow-md h-fit mb-8 max-w-5xl mx-auto">
             <!-- Toggle Buttons -->
-            <div class="flex border border-gray-200 rounded-lg p-1 mb-6 bg-gray-100 max-w-sm mx-auto">
-                <button id="paramsToggle" class="w-1/2 toggle-btn-active rounded-md py-2 text-sm font-medium transition-colors duration-200">Parameters</button>
-                <button id="stationsToggle" class="w-1/2 toggle-btn-inactive rounded-md py-2 text-sm font-medium transition-colors duration-200">Stations</button>
+            <div class="flex border border-gray-200 rounded-lg p-1 mb-6 bg-gray-100 max-w-md mx-auto">
+                <button id="paramsToggle" class="w-1/3 toggle-btn-active rounded-md py-2 text-sm font-medium transition-colors duration-200">Parameters</button>
+                <button id="stationsToggle" class="w-1/3 toggle-btn-inactive rounded-md py-2 text-sm font-medium transition-colors duration-200">Stations</button>
+                <button id="distancesToggle" class="w-1/3 toggle-btn-inactive rounded-md py-2 text-sm font-medium transition-colors duration-200">Distances</button>
             </div>
 
             <!-- Parameters View -->
@@ -107,6 +118,17 @@
                         <label for="targetUtilization" class="block text-sm font-medium text-gray-700">Target Utilization (%)</label>
                         <input type="number" id="targetUtilization" value="85" min="1" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
                     </div>
+                    <div>
+                        <label for="timeStep" class="block text-sm font-medium text-gray-700">Time Step (minutes)</label>
+                        <input type="number" id="timeStep" value="10" min="1" max="60" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div class="md:col-span-1">
+                         <label for="queueApproach" class="block text-sm font-medium text-gray-700">Queue Approach</label>
+                         <select id="queueApproach" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            <option value="fifo" selected>First-In, First-Out (FIFO)</option>
+                            <option value="srt">Smallest Remaining Time (SRT)</option>
+                         </select>
+                    </div>
                 </div>
                 <button id="runSimulationBtn" class="mt-8 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 flex items-center justify-center">
                     <svg id="runIcon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -123,7 +145,7 @@
                             <tr>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Rate (kg)</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hourly Rate (kg)</th>
+                                <th id="ratePerStepHeader" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rate per 10 min (kg)</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Output (tons)</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity (kg)</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time to Fill (days)</th>
@@ -134,6 +156,68 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Distances View -->
+            <div id="distancesView" class="hidden">
+                 <h2 class="text-xl text-center font-bold text-gray-800 mb-4 border-b pb-3">Locations & Distances</h2>
+                 <!-- Add New Ecostation Form -->
+                 <div class="mb-8 p-4 border rounded-lg bg-gray-50">
+                     <h3 class="text-lg font-semibold text-gray-700 mb-3">Add New Ecostation</h3>
+                     <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div>
+                                <label for="newName" class="block text-sm font-medium text-gray-700">Name</label>
+                                <input type="text" id="newName" placeholder="e.g., New Point 1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
+                             </div>
+                             <div>
+                                <label for="newLat" class="block text-sm font-medium text-gray-700">Latitude</label>
+                                <input type="number" id="newLat" placeholder="e.g., 49.8" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
+                             </div>
+                             <div>
+                                <label for="newLon" class="block text-sm font-medium text-gray-700">Longitude</label>
+                                <input type="number" id="newLon" placeholder="e.g., 73.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
+                             </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="newDailyRate" class="block text-sm font-medium text-gray-700">Daily Rate (kg)</label>
+                                <input type="number" id="newDailyRate" placeholder="e.g., 150.5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="newCapacity" class="block text-sm font-medium text-gray-700">Capacity (kg)</label>
+                                <input type="number" id="newCapacity" value="1500" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
+                            </div>
+                             <button id="addStationBtn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-300 h-10 self-end">Add Ecostation</button>
+                        </div>
+                     </div>
+                 </div>
+
+                 <!-- Locations Table -->
+                 <div class="mb-8">
+                     <h3 class="text-lg font-semibold text-gray-700 mb-3">Locations List</h3>
+                     <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latitude</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Longitude</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Daily Rate</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="locationsTableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                     </div>
+                 </div>
+
+                 <!-- Distance Matrix -->
+                 <div>
+                     <h3 class="text-lg font-semibold text-gray-700 mb-3">Distance Matrix (km)</h3>
+                     <div id="distanceMatrixContainer" class="overflow-x-auto"></div>
+                 </div>
             </div>
         </div>
 
@@ -211,53 +295,58 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-4">How the Outputs are Calculated</h2>
             <div class="prose max-w-none text-gray-600">
                 <h3 class="font-semibold text-gray-700 mt-4">Core Simulation Logic</h3>
-                <p>The simulation engine is built on a loop that advances time in hourly increments. For a 60-day simulation, this loop runs 1,440 times (60 days * 24 hours). In each hourly step, the following sequence of events occurs:</p>
+                <p>The simulation engine is built on a loop that advances time in discrete steps, defined by the <strong>"Time Step (minutes)"</strong> parameter. For a 60-day simulation with a 10-minute time step, this loop runs 8,640 times (60 days * 24 hours * 6 steps/hour). In each step, the following occurs:</p>
                 <ol class="list-decimal pl-5 space-y-2">
-                    <li><strong>Waste Accumulation:</strong> The engine checks if the current day is Sunday. If not, and if the current hour is within effective work hours (e.g., 08:00-15:00), each station's <strong>current_waste_kg</strong> is increased. No waste accumulates on Sundays or outside work hours.</li>
-                    <li><strong>Demand Trigger & Capacity Control:</strong> On workdays, if a station's waste exceeds the defined trigger percentage, a "collection request" is created. If a station's waste exceeds 100% capacity while it's already waiting, a "Service Failure" is logged.</li>
-                    <li><strong>Truck Assignment Logic (The Critical Step):</strong> The engine only attempts to assign trucks during effective work hours on workdays. It takes the oldest request and calculates the <strong>total trip duration</strong>. If the trip can be completed before the workday ends, a truck is assigned. The truck will complete its trip even if it finishes after work hours. No new trips are assigned after work hours or on Sundays.</li>
+                    <li><strong>Waste Accumulation:</strong> If the current day is not Sunday and the time is within effective work hours (e.g., 08:00-15:00), each station's <strong>current_waste_kg</strong> is increased by its calculated `rate_per_step`.</li>
+                    <li><strong>Demand Trigger & Capacity Control:</strong> On workdays, if a station's waste exceeds the defined trigger percentage, a "collection request" is created with the current minute as a timestamp. If a station's waste exceeds 100% capacity while it's already waiting, a "Service Failure" is logged.</li>
+                    <li><strong>Truck Assignment Logic:</strong> The engine only assigns trucks during work hours. It prioritizes requests based on the selected <strong>Queue Approach</strong>:
+                        <ul class="list-disc pl-5 mt-1">
+                            <li><strong>First-In, First-Out (FIFO):</strong> The truck is assigned to the station that made the oldest request.</li>
+                            <li><strong>Smallest Remaining Time (SRT):</strong> The engine calculates a "time to overflow" for each waiting station based on its current fill level and waste rate. The truck is assigned to the most urgent station (the one with the smallest time remaining).</li>
+                        </ul>
+                         After selecting a station, it calculates the <strong>total trip duration in minutes</strong>. If the trip can be completed before the workday ends, a truck is assigned. The truck will complete its trip even if it finishes after work hours. No new trips are assigned after work hours.
+                    </li>
                 </ol>
                 
                 <h3 class="font-semibold text-gray-700 mt-6">Chart & Metric Calculations</h3>
                  <ul class="list-disc pl-5 space-y-2">
                     <li>
-                        <strong>Truck Utilization Rate:</strong> This chart shows the percentage of available work hours that each truck spent actively on a trip.
+                        <strong>Truck Utilization Rate:</strong> This chart shows the percentage of available work minutes that each truck spent on a trip.
                         <ol class="list-decimal pl-6 mt-1">
-                            <li><strong>Calculate Total Available Work Hours:</strong> For each truck, this is `Number of Workdays (excluding Sundays)` * `Effective Daily Work Hours`.</li>
-                            <li><strong>Track Total Busy Hours:</strong> During the simulation, every time a truck completes a trip, the `total_trip_duration` is added to that truck's `total_work_hours`.</li>
-                            <li><strong>Calculate Percentage:</strong> After the simulation, each truck's utilization is calculated as (`Total Work Hours` / `Total Available Work Hours`) * 100.</li>
+                            <li><strong>Calculate Total Available Work Minutes:</strong> This is `Number of Workdays (excluding Sundays)` * `Effective Daily Work Hours` * 60.</li>
+                            <li><strong>Track Total Busy Minutes:</strong> During the simulation, the `total_trip_duration_minutes` is added to that truck's `total_work_minutes`.</li>
+                            <li><strong>Calculate Percentage:</strong> Utilization is (`Total Work Minutes` / `Total Available Work Minutes`) * 100.</li>
                         </ol>
                     </li>
                     <li>
                         <strong>Potential Additional Tonnage:</strong> This metric quantifies the opportunity cost of idle truck time against a configurable target.
                         <ol class="list-decimal pl-6 mt-1">
-                            <li><strong>Calculate Target Busy Time:</strong> `Target Busy Hours` = `Total Available Work Hours` * (`Target Utilization %` / 100).</li>
-                            <li><strong>Find Usable Idle Time:</strong> `Usable Idle Hours` = `Target Busy Hours` - `Current Busy Hours`. If this is negative, the potential gain is zero.</li>
-                            <li><strong>Calculate Average Trip Efficiency:</strong> The simulation finds the `Average Tonnage per Trip` and `Average Duration per Trip` from all completed collections.</li>
-                            <li><strong>Calculate Potential:</strong> `Potential Extra Trips` = `Usable Idle Hours` / `Average Duration per Trip`. The final result is `Potential Extra Trips` * `Average Tonnage per Trip`.</li>
+                            <li><strong>Find Usable Idle Minutes:</strong> The engine calculates the difference between the `Target Busy Minutes` (based on Target Utilization %) and the `Current Busy Minutes`.</li>
+                            <li><strong>Calculate Average Trip Efficiency:</strong> The simulation finds the `Average Tonnage per Trip` and `Average Duration per Trip (minutes)` from all completed collections.</li>
+                            <li><strong>Calculate Potential:</strong> `Potential Extra Trips` = `Usable Idle Minutes` / `Average Duration per Trip`. The final result is `Potential Extra Trips` * `Average Tonnage per Trip`.</li>
                         </ol>
                     </li>
                     <li>
-                        <strong>Average Dispatch Delay:</strong> This chart measures the time a request waits in the queue before a truck is dispatched, counting only effective work hours. It isolates system delay from travel time.
+                        <strong>Average Dispatch Delay:</strong> This measures the time a request waits before a truck is dispatched, counting only effective work minutes.
                         <ol class="list-decimal pl-6 mt-1">
-                           <li><strong>Log Timestamps:</strong> When a station creates a request, the simulation logs the `request_hour`. When a truck is assigned to that request, it logs the `assignment_hour`.</li>
-                           <li><strong>Calculate Effective Delay:</strong> For each collection, a special function iterates from the request hour to the assignment hour, counting only the hours that fall within the effective workday (e.g., 08:00-15:00) and are not Sundays. This correctly excludes nights and weekends from the delay calculation.</li>
-                           <li><strong>Average Results:</strong> After the simulation, the engine averages these calculated delays for each station, highlighting true operational bottlenecks.</li>
+                           <li><strong>Log Timestamps:</strong> The engine logs the `request_minute` and `assignment_minute` for each collection.</li>
+                           <li><strong>Calculate Effective Delay:</strong> A function iterates from the request minute to the assignment minute, counting only the minutes that fall within the effective workday (e.g., 08:00-15:00) and are not on a Sunday. This provides a true measure of operational delay.</li>
+                           <li><strong>Average Results:</strong> The engine averages these delays for each station and converts the final result to hours for easier interpretation.</li>
                         </ol>
                     </li>
                     <li>
                         <strong>Hourly Truck Activity:</strong> This graph shows the operational rhythm of the workday.
                         <ol class="list-decimal pl-6 mt-1">
-                            <li><strong>Track Activity:</strong> The simulation uses a 24-element array (one for each hour). For every hour of the simulation, it increments the counter for the current hour if a truck is busy.</li>
-                            <li><strong>Normalize Data:</strong> At the end, each hourly total is divided by the number of workdays to get the `daily average of active trucks` for each hour.</li>
+                            <li><strong>Track Activity:</strong> During the minute-by-minute simulation, the engine notes which hour each minute belongs to. If a truck is busy during that minute, an hourly activity counter is incremented.</li>
+                            <li><strong>Normalize Data:</strong> At the end, each hourly total is divided by the number of workdays and the number of simulation steps per hour to get the `daily average of active trucks` for each hour.</li>
                         </ol>
                     </li>
                      <li>
-                        <strong>Service Failures by Station:</strong> This chart counts the number of times a station's capacity was exceeded while it was already waiting for a collection.
+                        <strong>Service Failures by Station:</strong> This counts how many times a station overflowed while already waiting for collection.
                         <ol class="list-decimal pl-6 mt-1">
-                            <li><strong>Log a Failure:</strong> In every hourly step, after waste accumulates, the engine checks if a station's `current_waste_kg` is greater than its `max_capacity_kg`.</li>
-                            <li><strong>Check Condition:</strong> A failure is only logged if the overflowing station *already has a pending collection request* in the `collection_queue`.</li>
-                            <li><strong>Aggregate Results:</strong> At the end of the simulation, the engine counts the total number of failure logs for each station.</li>
+                            <li><strong>Log a Failure:</strong> In every time step, after waste accumulates, the engine checks if `current_waste_kg` > `max_capacity_kg`.</li>
+                            <li><strong>Check Condition:</strong> A failure is only logged if the overflowing station has a pending request in the queue.</li>
+                            <li><strong>Aggregate Results:</strong> At the end, the engine counts the total number of failure logs for each station.</li>
                         </ol>
                     </li>
                 </ul>
@@ -275,37 +364,25 @@
     </div>
 
     <script>
-        // --- DATA SECTION ---
-        const stationsData = [
-            { station_name: 'СОРТИРОВК', daily_rate_kg: 487.1, max_capacity_kg: 1500 },
-            { station_name: 'АЛИХАНОВА', daily_rate_kg: 338.2, max_capacity_kg: 1500 },
-            { station_name: 'КАЙРАТ', daily_rate_kg: 290.5, max_capacity_kg: 1500 },
-            { station_name: 'ПРИШАХТИН', daily_rate_kg: 231.8, max_capacity_kg: 1500 },
-            { station_name: 'ГОРНЯК', daily_rate_kg: 193.3, max_capacity_kg: 1500 },
-            { station_name: '6 МКР-Н Т', daily_rate_kg: 148.2, max_capacity_kg: 1500 },
-            { station_name: 'ШАХТИНСК', daily_rate_kg: 125.8, max_capacity_kg: 1500 },
-            { station_name: 'АРБА', daily_rate_kg: 115.3, max_capacity_kg: 1500 },
-            { station_name: 'Абай', daily_rate_kg: 98.7, max_capacity_kg: 1500 },
-            { station_name: 'САРАНЬ', daily_rate_kg: 94.1, max_capacity_kg: 1500 },
-            { station_name: 'Экспресс-Темиртау', daily_rate_kg: 85.4, max_capacity_kg: 1500 },
-            { station_name: 'СТЕПНОЙ', daily_rate_kg: 80.8, max_capacity_kg: 1500 }
+        // --- DATA SECTION (now mutable) ---
+        let allLocations = [
+            { name: 'СОРТИРОВК', lat: 49.976136, lon: 73.21353, daily_rate_kg: 487.1, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'АЛИХАНОВА', lat: 49.812733, lon: 73.10442, daily_rate_kg: 338.2, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'КАЙРАТ', lat: 49.852155, lon: 73.189151, daily_rate_kg: 290.5, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'ПРИШАХТИН', lat: 49.902935, lon: 73.090803, daily_rate_kg: 231.8, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'ГОРНЯК', lat: 49.89676, lon: 73.209151, daily_rate_kg: 193.3, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: '6 МКР-Н Т', lat: 50.048318, lon: 72.960638, daily_rate_kg: 148.2, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'ШАХТИНСК', lat: 49.700802, lon: 72.603979, daily_rate_kg: 125.8, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'АРБА', lat: 49.784771, lon: 73.102483, daily_rate_kg: 115.3, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'Абай', lat: 49.629102, lon: 72.874421, daily_rate_kg: 98.7, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'САРАНЬ', lat: 49.804743, lon: 72.829176, daily_rate_kg: 94.1, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'Экспресс-Темиртау', lat: 50.062618, lon: 72.992437, daily_rate_kg: 85.4, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'СТЕПНОЙ', lat: 49.785033, lon: 73.151946, daily_rate_kg: 80.8, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'Garage', lat: 49.791967, lon: 73.162751, daily_rate_kg: 0, capacity_kg: 0, type: 'garage', isOriginal: true }
         ];
 
-        const timeMatrixHours = {
-            'Абай': { 'Абай': 0.0, 'АЛИХАНОВА': 0.9758836309, 'АРБА': 0.8856646685, 'ГОРНЯК': 1.421084325, 'КАЙРАТ': 1.24672432, 'ПРИШАХТИН': 1.269748816, 'САРАНЬ': 0.7354071993, 'СОРТИРОВК': 1.694524349, '6 МКР-Н Т': 1.746566766, 'ШАХТИНСК': 0.7812510867, 'Экспресс-Темиртау': 1.817841172, 'СТЕПНОЙ': 0.9819329877, 'Garage': 1.022462959 },
-            'АЛИХАНОВА': { 'Абай': 0.9758836309, 'АЛИХАНОВА': 0.0, 'АРБА': 0.1156011684, 'ГОРНЯК': 0.4452061424, 'КАЙРАТ': 0.2783180373, 'ПРИШАХТИН': 0.490636413, 'САРАНЬ': 0.8256336495, 'СОРТИРОВК': 0.734658126, '6 МКР-Н Т': 1.045384755, 'ШАХТИНСК': 1.419618059, 'Экспресс-Темиртау': 1.111815124, 'СТЕПНОЙ': 0.1362703816, 'Garage': 0.09088669528 },
-            'АРБА': { 'Абай': 0.8856646685, 'АЛИХАНОВА': 0.1156011684, 'АРБА': 0.0, 'ГОРНЯК': 0.4001097621, 'КАЙРАТ': 0.233221657, 'ПРИШАХТИН': 0.4357597143, 'САРАНЬ': 0.7354146873, 'СОРТИРОВК': 0.8438036118, '6 МКР-Н Т': 1.151985572, 'ШАХТИНСК': 1.329399097, 'Экспресс-Темиртау': 1.21841604, 'СТЕПНОЙ': 0.181366762, 'Garage': 0.1359830757 },
-            'ГОРНЯК': { 'Абай': 1.421084325, 'АЛИХАНОВА': 0.4452061424, 'АРБА': 0.4001097621, 'ГОРНЯК': 0.0, 'КАЙРАТ': 0.1668881051, 'ПРИШАХТИН': 0.3340571996, 'САРАНЬ': 1.109153068, 'СОРТИРОВК': 0.3280372039, '6 МКР-Н Т': 0.9097104383, 'ШАХТИНСК': 1.764824199, 'Экспресс-Темиртаu': 0.9761408091, 'СТЕПНОЙ': 0.3089357604, 'Garage': 0.3543194468 },
-            'КАЙРАТ': { 'Абай': 1.24672432, 'АЛИХАНОВА': 0.2783180373, 'АРБА': 0.233221657, 'ГОРНЯК': 0.1668881051, 'КАЙРАТ': 0.0, 'ПРИШАХТИН': 0.3115089844, 'САРАНЬ': 0.942264963, 'СОРТИРОВК': 0.5161420472, '6 МКР-Н Т': 1.012503813, 'ШАХТИНСК': 1.597936094, 'Экспресс-Темиртау': 1.07893419, 'СТЕПНОЙ': 0.1420476553, 'Garage': 0.1874313417 },
-            'ПРИШАХТИН': { 'Абай': 1.269748816, 'АЛИХАНОВА': 0.490636413, 'АРБА': 0.4357597143, 'ГОРНЯК': 0.3340571996, 'КАЙРАТ': 0.3115089844, 'ПРИШАХТИН': 0.0, 'САРАНЬ': 1.16315256, 'СОРТИРОВК': 0.4447725126, '6 МКР-Н Т': 0.697961527, 'ШАХТИНСК': 1.755370215, 'Экспресс-Темиртау': 0.7643918958, 'СТЕПНОЙ': 0.4455163339, 'Garage': 0.4909000203 },
-            'САРАНЬ': { 'Абай': 0.7354071993, 'АЛИХАНОВА': 0.8256336495, 'АРБА': 0.7354146873, 'ГОРНЯК': 1.109153068, 'КАЙРАТ': 0.942264963, 'ПРИШАХТИН': 1.16315256, 'САРАНЬ': 0.0, 'СОРТИРОВК': 1.243777424, '6 МКР-Н Т': 1.396316785, 'ШАХТИНСК': 0.4700011056, 'Экспресс-Темиртау': 1.467591787, 'СТЕПНОЙ': 0.8316830065, 'Garage': 0.8722129753 },
-            'СОРТИРОВК': { 'Абай': 1.694524349, 'АЛИХАНОВА': 0.734658126, 'АРБА': 0.8438036118, 'ГОРНЯК': 0.3280372039, 'КАЙРАТ': 0.5161420472, 'ПРИШАХТИН': 0.4447725126, 'САРАНЬ': 1.243777424, 'СОРТИРОВК': 0.0, '6 МКР-Н Т': 0.7344279207, 'ШАХТИНСК': 1.982253137, 'Экспресс-Темиртау': 0.6868853951, 'СТЕПНОЙ': 0.8061114358, 'Garage': 0.7725467485 },
-            '6 МКР-Н Т': { 'Абай': 1.746566766, 'АЛИХАНОВА': 1.045384755, 'АРБА': 1.151985572, 'ГОРНЯК': 0.9097104383, 'КАЙРАТ': 1.012503813, 'ПРИШАХТИН': 0.697961527, 'САРАНЬ': 1.396316785, 'СОРТИРОВК': 0.7344279207, '6 МКР-Н Т': 0.0, 'ШАХТИНСК': 2.03429555, 'Экспресс-Темиртау': 0.1471749568, 'СТЕПНОЙ': 1.113439391, 'Garage': 1.079874704 },
-            'ШАХТИНСК': { 'Абай': 0.7812510867, 'АЛИХАНОВА': 1.419618059, 'АРБА': 1.329399097, 'ГОРНЯК': 1.764824199, 'КАЙРАТ': 1.597936094, 'ПРИШАХТИН': 1.755370215, 'САРАНЬ': 0.4700011056, 'СОРТИРОВК': 1.982253137, '6 МКР-Н Т': 2.03429555, 'ШАХТИНСК': 0.0, 'Экспресс-Темиртау': 2.105569961, 'СТЕПНОЙ': 1.425667416, 'Garage': 1.466197385 },
-            'Экспресс-Темиртау': { 'Абай': 1.817841172, 'АЛИХАНОВА': 1.111815124, 'АРБА': 1.21841604, 'ГОРНЯК': 0.9761408091, 'КАЙРАТ': 1.07893419, 'ПРИШАХТИН': 0.7643918958, 'САРАНЬ': 1.467591787, 'СОРТИРОВК': 0.6868853951, '6 МКР-Н Т': 0.1471749568, 'ШАХТИНСК': 2.105569961, 'Экспресс-Темиртау': 0.0, 'СТЕПНОЙ': 1.17986986, 'Garage': 1.146305173 },
-            'СТЕПНОЙ': { 'Абай': 0.9819329877, 'АЛИХАНОВА': 0.1362703816, 'АРБА': 0.181366762, 'ГОРНЯК': 0.3089357604, 'КАЙРАТ': 0.1420476553, 'ПРИШАХТИН': 0.4455163339, 'САРАНЬ': 0.8316830065, 'СОРТИРОВК': 0.8061114358, '6 МКР-Н Т': 1.113439391, 'ШАХТИНСК': 1.425667416, 'Экспресс-Темиртау': 1.17986986, 'СТЕПНОЙ': 0.0, 'Garage': 0.04538368642 },
-            'Garage': { 'Абай': 1.022462959, 'АЛИХАНОВА': 0.09088669528, 'АРБА': 0.1359830757, 'ГОРНЯК': 0.3543194468, 'КАЙРАТ': 0.1874313417, 'ПРИШАХТИН': 0.4909000203, 'САРАНЬ': 0.8722129753, 'СОРТИРОВК': 0.7725467485, '6 МКР-Н Т': 1.079874704, 'ШАХТИНСК': 1.466197385, 'Экспресс-Темиртау': 1.146305173, 'СТЕПНОЙ': 0.04538368642, 'Garage': 0.0 }
-        };
+        let stationsData = [];
+        let timeMatrixMinutes = {};
         const GARAGE_NAME = 'Garage';
 
         // --- DOM Elements ---
@@ -318,65 +395,114 @@
         const chartsContainer = document.getElementById('chartsContainer');
         const paramsToggle = document.getElementById('paramsToggle');
         const stationsToggle = document.getElementById('stationsToggle');
+        const distancesToggle = document.getElementById('distancesToggle');
         const parametersView = document.getElementById('parametersView');
         const stationsView = document.getElementById('stationsView');
+        const distancesView = document.getElementById('distancesView');
         const resultsTableView = document.getElementById('resultsTableView');
+        const addStationBtn = document.getElementById('addStationBtn');
+        const locationsTableBody = document.getElementById('locationsTableBody');
+        const timeStepInput = document.getElementById('timeStep');
+        const queueApproachSelect = document.getElementById('queueApproach');
+        const stationsTableBody = document.getElementById('stationsTableBody');
+
 
         let utilizationChartInstance, failuresChartInstance, waitTimeChartInstance, hourlyActivityChartInstance;
         
-        // --- HELPER FUNCTION for wait time calculation ---
-        function calculateEffectiveWaitHours(request_hour, assignment_hour, work_start, work_end) {
-            let effective_wait = 0;
-            for (let h = request_hour; h < assignment_hour; h++) {
-                const day_of_week = Math.floor(h / 24) % 7; // 0=Mon, 6=Sun
-                const hour_of_day = h % 24;
-                if (day_of_week !== 6 && hour_of_day >= work_start && hour_of_day < work_end) {
-                    effective_wait++;
+        // --- DYNAMIC DATA CALCULATION ---
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function recalculateAllData() {
+            stationsData = allLocations
+                .filter(loc => loc.type === 'ecostation')
+                .map(loc => ({
+                    station_name: loc.name,
+                    daily_rate_kg: loc.daily_rate_kg,
+                    max_capacity_kg: loc.capacity_kg
+                }));
+
+            const ROAD_NETWORK_FACTOR = 1.3;
+            const avgSpeed = parseFloat(document.getElementById('avgSpeed').value) || 35;
+            timeMatrixMinutes = {};
+            allLocations.forEach(loc1 => {
+                timeMatrixMinutes[loc1.name] = {};
+                allLocations.forEach(loc2 => {
+                    const dist = haversine(loc1.lat, loc1.lon, loc2.lat, loc2.lon);
+                    const roadDist = dist * ROAD_NETWORK_FACTOR;
+                    const timeHours = avgSpeed > 0 ? roadDist / avgSpeed : 0;
+                    timeMatrixMinutes[loc1.name][loc2.name] = timeHours * 60;
+                });
+            });
+        }
+        
+        function calculateEffectiveWaitMinutes(request_minute, assignment_minute, work_start_hour, work_end_hour, interval) {
+            let effective_wait_minutes = 0;
+            for (let m = request_minute; m < assignment_minute; m += interval) {
+                const day_of_week = Math.floor(m / (24 * 60)) % 7;
+                const hour_of_day = Math.floor((m % (24*60)) / 60);
+
+                if (day_of_week !== 6 && hour_of_day >= work_start_hour && hour_of_day < work_end_hour) {
+                    effective_wait_minutes += interval;
                 }
             }
-            return effective_wait;
+            return effective_wait_minutes;
         }
 
         // --- SIMULATION ENGINE ---
         function runSimulation() {
-            const params = {
+             const params = {
                 SIMULATION_DAYS: parseInt(document.getElementById('simulationDays').value),
                 NUM_TRUCKS: parseInt(document.getElementById('numTrucks').value),
                 COLLECTION_TRIGGER_PERCENT: parseInt(document.getElementById('triggerPercent').value) / 100,
                 WORK_START_HOUR: parseInt(document.getElementById('workStart').value),
                 WORK_END_HOUR: parseInt(document.getElementById('workEnd').value),
-                LOADING_TIME_HOURS: parseInt(document.getElementById('loadingTime').value) / 60,
-                UNLOADING_TIME_HOURS: parseInt(document.getElementById('unloadingTime').value) / 60,
+                LOADING_TIME_MINUTES: parseInt(document.getElementById('loadingTime').value),
+                UNLOADING_TIME_MINUTES: parseInt(document.getElementById('unloadingTime').value),
                 TARGET_UTILIZATION: parseInt(document.getElementById('targetUtilization').value) / 100,
+                TIME_STEP_MINUTES: parseInt(timeStepInput.value),
+                QUEUE_APPROACH: queueApproachSelect.value,
             };
 
+            recalculateAllData();
+
             const effectiveWorkdayHours = params.WORK_END_HOUR - params.WORK_START_HOUR;
-            const simTotalHours = params.SIMULATION_DAYS * 24;
+            const effectiveWorkdayMinutes = effectiveWorkdayHours * 60;
+            const simTotalMinutes = params.SIMULATION_DAYS * 24 * 60;
 
             let ecostations = JSON.parse(JSON.stringify(stationsData));
             ecostations.forEach(s => {
                 s.current_waste_kg = 0.0;
-                s.hourly_rate_kg = effectiveWorkdayHours > 0 ? s.daily_rate_kg / effectiveWorkdayHours : 0;
+                s.rate_per_step = effectiveWorkdayMinutes > 0 ? (s.daily_rate_kg / effectiveWorkdayMinutes) * params.TIME_STEP_MINUTES : 0;
             });
 
             let truckStatus = Array.from({ length: params.NUM_TRUCKS }, (_, i) => ({
-                truck_id: i + 1, is_busy: false, busy_until_hour: 0, total_work_hours: 0.0, trips_made: 0
+                truck_id: i + 1, is_busy: false, busy_until_minute: 0, total_work_minutes: 0, trips_made: 0
             }));
 
             let simulationLog = [];
             let collection_queue = [];
             let hourlyActivity = Array(24).fill(0);
 
-            for (let hour = 0; hour < simTotalHours; hour++) {
-                const day_index = Math.floor(hour / 24);
-                const day_of_week = day_index % 7; // 0=Mon, 6=Sun
+            for (let minute = 0; minute < simTotalMinutes; minute += params.TIME_STEP_MINUTES) {
+                const day_index = Math.floor(minute / (24 * 60));
+                const day_of_week = day_index % 7; 
                 const is_workday = day_of_week !== 6;
 
-                const hour_of_day = hour % 24;
+                const hour_of_day = Math.floor((minute % (24 * 60)) / 60);
                 const is_working_hour = hour_of_day >= params.WORK_START_HOUR && hour_of_day < params.WORK_END_HOUR;
 
                 if (is_working_hour && is_workday) {
-                    ecostations.forEach(s => s.current_waste_kg += s.hourly_rate_kg);
+                    ecostations.forEach(s => s.current_waste_kg += s.rate_per_step);
                 }
                 
                 if(is_workday){
@@ -388,7 +514,7 @@
                         }
                         if (station.current_waste_kg >= station.max_capacity_kg * params.COLLECTION_TRIGGER_PERCENT) {
                             if (!collection_queue.some(req => req.station_name === station.station_name)) {
-                                collection_queue.push({ station_name: station.station_name, request_hour: hour });
+                                collection_queue.push({ station_name: station.station_name, request_minute: minute });
                             }
                         }
                     });
@@ -396,49 +522,63 @@
 
 
                 truckStatus.forEach(truck => {
-                    if (truck.busy_until_hour <= hour) truck.is_busy = false;
-                    if (truck.is_busy) hourlyActivity[hour_of_day]++;
+                    if (truck.busy_until_minute <= minute) truck.is_busy = false;
+                    if (truck.is_busy) hourlyActivity[hour_of_day] += params.TIME_STEP_MINUTES;
                 });
 
                 if (collection_queue.length > 0 && is_working_hour && is_workday) {
-                    collection_queue.sort((a, b) => a.request_hour - b.request_hour);
+                    
+                    if (params.QUEUE_APPROACH === 'fifo') {
+                        collection_queue.sort((a, b) => a.request_minute - b.request_minute);
+                    } else if (params.QUEUE_APPROACH === 'srt') {
+                         collection_queue.forEach(req => {
+                            const station = ecostations.find(s => s.station_name === req.station_name);
+                            const remaining_capacity = station.max_capacity_kg - station.current_waste_kg;
+                            const rate_per_minute = station.daily_rate_kg / effectiveWorkdayMinutes;
+                            req.time_to_fill = rate_per_minute > 0 ? remaining_capacity / rate_per_minute : Infinity;
+                         });
+                         collection_queue.sort((a, b) => a.time_to_fill - b.time_to_fill);
+                    }
 
-                    for (let i = collection_queue.length - 1; i >= 0; i--) {
+                    for (let i = 0; i < collection_queue.length; i++) {
                         const request = collection_queue[i];
                         const availableTruck = truckStatus.find(t => !t.is_busy);
                         if (!availableTruck) break;
 
                         const station_name = request.station_name;
-                        const go_time = timeMatrixHours[GARAGE_NAME][station_name];
-                        const return_time = timeMatrixHours[station_name][GARAGE_NAME];
-                        const total_trip_duration = go_time + params.LOADING_TIME_HOURS + return_time + params.UNLOADING_TIME_HOURS;
+                        const go_time = timeMatrixMinutes[GARAGE_NAME][station_name];
+                        const return_time = timeMatrixMinutes[station_name][GARAGE_NAME];
+                        const total_trip_duration_minutes = go_time + params.LOADING_TIME_MINUTES + return_time + params.UNLOADING_TIME_MINUTES;
                         
-                        const remaining_work_hours_today = params.WORK_END_HOUR - hour_of_day;
+                        const current_minute_of_day = minute % (24*60);
+                        const work_end_minute_of_day = params.WORK_END_HOUR * 60;
+                        const remaining_work_minutes_today = work_end_minute_of_day - current_minute_of_day;
 
-                        if (total_trip_duration < remaining_work_hours_today) {
-                            const assignment_hour = hour;
-                            const trip_end_hour = hour + Math.ceil(total_trip_duration);
+                        if (total_trip_duration_minutes < remaining_work_minutes_today) {
+                            const assignment_minute = minute;
+                            const trip_end_minute = minute + Math.ceil(total_trip_duration_minutes);
                             
                             availableTruck.is_busy = true;
-                            availableTruck.busy_until_hour = trip_end_hour;
-                            availableTruck.total_work_hours += total_trip_duration;
+                            availableTruck.busy_until_minute = trip_end_minute;
+                            availableTruck.total_work_minutes += total_trip_duration_minutes;
                             availableTruck.trips_made += 1;
 
                             const station = ecostations.find(s => s.station_name === station_name);
                             const collected_amount = station.current_waste_kg;
                             station.current_waste_kg = 0.0;
 
-                            const dispatch_delay = calculateEffectiveWaitHours(request.request_hour, assignment_hour, params.WORK_START_HOUR, params.WORK_END_HOUR);
+                            const dispatch_delay_minutes = calculateEffectiveWaitMinutes(request.request_minute, assignment_minute, params.WORK_START_HOUR, params.WORK_END_HOUR, params.TIME_STEP_MINUTES);
 
                             simulationLog.push({
                                 event: 'COLLECTION',
                                 station_name: station_name,
                                 collected_kg: collected_amount,
-                                dispatch_delay: dispatch_delay,
-                                trip_duration: total_trip_duration,
+                                dispatch_delay_minutes: dispatch_delay_minutes,
+                                trip_duration_minutes: total_trip_duration_minutes,
                             });
                             
                             collection_queue.splice(i, 1);
+                            i--; // Adjust index after removal
                         }
                     }
                 }
@@ -447,28 +587,26 @@
             // --- Result Calculation ---
             let num_work_days = 0;
             for (let d = 0; d < params.SIMULATION_DAYS; d++) {
-                if (d % 7 !== 6) { // Assuming day 0 is Monday, day 6 is Sunday
-                    num_work_days++;
-                }
+                if (d % 7 !== 6) num_work_days++;
             }
 
             const collection_logs = simulationLog.filter(log => log.event === 'COLLECTION');
-            const total_available_hours = params.NUM_TRUCKS * num_work_days * effectiveWorkdayHours;
-            const total_busy_hours = truckStatus.reduce((sum, truck) => sum + truck.total_work_hours, 0);
-            const overall_utilization = (total_available_hours > 0) ? (total_busy_hours / total_available_hours) * 100 : 0;
+            const total_available_minutes = params.NUM_TRUCKS * num_work_days * effectiveWorkdayMinutes;
+            const total_busy_minutes = truckStatus.reduce((sum, truck) => sum + truck.total_work_minutes, 0);
+            const overall_utilization = (total_available_minutes > 0) ? (total_busy_minutes / total_available_minutes) * 100 : 0;
             
             truckStatus.forEach(truck => {
-                truck.utilization = (num_work_days * effectiveWorkdayHours > 0) ? (truck.total_work_hours / (num_work_days * effectiveWorkdayHours)) * 100 : 0;
+                truck.utilization = (num_work_days * effectiveWorkdayMinutes > 0) ? (truck.total_work_minutes / (num_work_days * effectiveWorkdayMinutes)) * 100 : 0;
             });
 
             const total_collected_waste_kg = collection_logs.reduce((sum, log) => sum + log.collected_kg, 0);
             
-            const target_busy_hours = total_available_hours * params.TARGET_UTILIZATION;
-            const usable_idle_hours = Math.max(0, target_busy_hours - total_busy_hours);
+            const target_busy_minutes = total_available_minutes * params.TARGET_UTILIZATION;
+            const usable_idle_minutes = Math.max(0, target_busy_minutes - total_busy_minutes);
 
-            const avg_trip_duration = collection_logs.length > 0 ? collection_logs.reduce((sum, log) => sum + log.trip_duration, 0) / collection_logs.length : 0;
+            const avg_trip_duration_minutes = collection_logs.length > 0 ? collection_logs.reduce((sum, log) => sum + log.trip_duration_minutes, 0) / collection_logs.length : 0;
             const avg_waste_per_trip = collection_logs.length > 0 ? total_collected_waste_kg / collection_logs.length : 0;
-            const potential_extra_trips = avg_trip_duration > 0 ? usable_idle_hours / avg_trip_duration : 0;
+            const potential_extra_trips = avg_trip_duration_minutes > 0 ? usable_idle_minutes / avg_trip_duration_minutes : 0;
             const potential_tonnage_increase_kg = potential_extra_trips * avg_waste_per_trip;
 
             const service_failures = simulationLog.filter(log => log.event === 'SERVICE_FAILURE');
@@ -479,42 +617,46 @@
             const wait_times = {};
             collection_logs.forEach(log => {
                 if (!wait_times[log.station_name]) wait_times[log.station_name] = [];
-                wait_times[log.station_name].push(log.dispatch_delay);
+                wait_times[log.station_name].push(log.dispatch_delay_minutes);
             });
-            const avg_wait_times = {};
+            const avg_wait_times_hours = {};
+            stationsData.forEach(s => avg_wait_times_hours[s.station_name] = 0); 
             for (const station in wait_times) {
-                avg_wait_times[station] = wait_times[station].reduce((a, b) => a + b, 0) / wait_times[station].length;
+                const avg_minutes = wait_times[station].reduce((a, b) => a + b, 0) / wait_times[station].length;
+                avg_wait_times_hours[station] = avg_minutes / 60;
             }
-
-            const normalizedHourlyActivity = hourlyActivity.map(val => val / num_work_days);
+            
+            const steps_per_hour = 60 / params.TIME_STEP_MINUTES;
+            const normalizedHourlyActivity = hourlyActivity.map(val => val / 60 / num_work_days);
             
             const resultsByStation = {};
             stationsData.forEach(s => {
                 resultsByStation[s.station_name] = { trips: 0, collected: 0 };
             });
             collection_logs.forEach(log => {
-                resultsByStation[log.station_name].trips++;
-                resultsByStation[log.station_name].collected += log.collected_kg;
+                if(resultsByStation[log.station_name]) {
+                    resultsByStation[log.station_name].trips++;
+                    resultsByStation[log.station_name].collected += log.collected_kg;
+                }
             });
-
 
             return {
                 total_collected_waste_kg, overall_utilization, service_failures, truckStatus, failures_by_station,
-                potential_tonnage_increase_kg, avg_wait_times, normalizedHourlyActivity, resultsByStation
+                potential_tonnage_increase_kg, avg_wait_times_hours, normalizedHourlyActivity, resultsByStation
             };
         }
 
-        // --- UI UPDATE ---
+        // --- UI UPDATE & RENDER ---
         function updateUI(results) {
-            totalWasteEl.textContent = `${(results.total_collected_waste_kg / 1000).toFixed(2)} tons`;
+             totalWasteEl.textContent = `${(results.total_collected_waste_kg / 1000).toFixed(2)} tons`;
             avgUtilizationEl.textContent = `${results.overall_utilization.toFixed(2)} %`;
             totalFailuresEl.textContent = results.service_failures.length;
             potentialTonnageEl.textContent = `${(results.potential_tonnage_increase_kg / 1000).toFixed(2)} tons`;
         }
         
         function renderResultsTable(results) {
-            const tableBody = document.getElementById('resultsTableBody');
-            tableBody.innerHTML = ''; // Clear existing rows
+             const tableBody = document.getElementById('resultsTableBody');
+            tableBody.innerHTML = '';
             const sortedStations = Object.entries(results.resultsByStation).sort((a, b) => b[1].collected - a[1].collected);
 
             sortedStations.forEach(([name, data]) => {
@@ -531,8 +673,7 @@
         }
 
         function renderCharts(results) {
-            // Truck Utilization Chart
-            const utilCtx = document.getElementById('utilizationChart').getContext('2d');
+             const utilCtx = document.getElementById('utilizationChart').getContext('2d');
             if (utilizationChartInstance) utilizationChartInstance.destroy();
             utilizationChartInstance = new Chart(utilCtx, {
                 type: 'bar',
@@ -547,9 +688,8 @@
                 options: { scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Percentage (%)' } } }, plugins: { legend: { display: false } } }
             });
 
-            // Wait Time Chart
             const waitTimeCtx = document.getElementById('waitTimeChart').getContext('2d');
-            const waitTimeData = Object.entries(results.avg_wait_times).sort((a,b) => b[1] - a[1]);
+            const waitTimeData = Object.entries(results.avg_wait_times_hours).sort((a,b) => b[1] - a[1]);
             if(waitTimeChartInstance) waitTimeChartInstance.destroy();
             waitTimeChartInstance = new Chart(waitTimeCtx, {
                 type: 'bar',
@@ -564,7 +704,6 @@
                 options: { indexAxis: 'y', scales: { x: { beginAtZero: true, title: { display: true, text: 'Hours' } } }, plugins: { legend: { display: false } } }
             });
 
-            // Hourly Activity Chart
             const hourlyActivityCtx = document.getElementById('hourlyActivityChart').getContext('2d');
             const workStart = parseInt(document.getElementById('workStart').value);
             const workEnd = parseInt(document.getElementById('workEnd').value);
@@ -582,10 +721,9 @@
                         }
                     }]
                 },
-                options: { scales: { y: { beginAtZero: true, max: results.truckStatus.length, title: { display: true, text: 'Avg. Busy Trucks' } } }, plugins: { legend: { display: false } } }
+                options: { scales: { y: { beginAtZero: true, max: Math.max(1, results.truckStatus.length), title: { display: true, text: 'Avg. Busy Trucks' } } }, plugins: { legend: { display: false } } }
             });
 
-            // Service Failures Chart
             const failuresCtx = document.getElementById('failuresChart').getContext('2d');
             const failureData = Object.entries(results.failures_by_station).sort((a, b) => b[1] - a[1]);
             if (failuresChartInstance) failuresChartInstance.destroy();
@@ -606,23 +744,72 @@
         function populateStationsTable() {
             const tableBody = document.getElementById('stationsTableBody');
             const effectiveWorkHours = document.getElementById('workEnd').value - document.getElementById('workStart').value;
-            tableBody.innerHTML = ''; // Clear existing rows
-            stationsData.forEach(station => {
-                const timeToFill = station.daily_rate_kg > 0 ? (station.max_capacity_kg / station.daily_rate_kg).toFixed(1) : 'N/A';
+            const timeStep = parseInt(timeStepInput.value);
+            document.getElementById('ratePerStepHeader').textContent = `Rate per ${timeStep} min (kg)`;
+            tableBody.innerHTML = '';
+            
+            const sortedStations = allLocations
+                .filter(s => s.type === 'ecostation')
+                .sort((a, b) => b.daily_rate_kg - a.daily_rate_kg);
+
+            sortedStations.forEach(station => {
+                const timeToFill = station.daily_rate_kg > 0 ? (station.capacity_kg / station.daily_rate_kg).toFixed(1) : 'N/A';
                 const monthlyTons = ((station.daily_rate_kg * 30) / 1000).toFixed(2);
-                const hourlyRate = (station.daily_rate_kg / effectiveWorkHours).toFixed(1);
+                const ratePerStep = (effectiveWorkHours > 0) ? (station.daily_rate_kg / (effectiveWorkHours * 60)) * timeStep : 0;
                 const row = `
                     <tr>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${station.station_name}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${station.daily_rate_kg.toFixed(1)}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${hourlyRate}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${station.name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                             <input type="number" value="${station.daily_rate_kg.toFixed(1)}" data-name="${station.name}" class="w-24 p-1 border rounded daily-rate-input">
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${ratePerStep.toFixed(2)}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">${monthlyTons}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${station.max_capacity_kg.toFixed(1)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${station.capacity_kg.toFixed(1)}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${timeToFill}</td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
             });
+        }
+
+        function renderDistancesView() {
+            locationsTableBody.innerHTML = '';
+            allLocations.forEach(loc => {
+                let actionsHTML = '';
+                if (!loc.isOriginal) {
+                    actionsHTML = `
+                        <div class="flex space-x-2">
+                            <button class="text-indigo-600 hover:text-indigo-900 text-sm edit-btn" data-name="${loc.name}">Edit</button>
+                            <button class="text-red-600 hover:text-red-900 text-sm delete-btn" data-name="${loc.name}">Delete</button>
+                        </div>
+                    `;
+                }
+                const row = `
+                    <tr data-name="${loc.name}">
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${loc.name}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${loc.lat.toFixed(6)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${loc.lon.toFixed(6)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${loc.type === 'ecostation' ? loc.daily_rate_kg.toFixed(1) : 'N/A'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${loc.type === 'ecostation' ? loc.capacity_kg.toFixed(1) : 'N/A'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">${actionsHTML}</td>
+                    </tr>`;
+                locationsTableBody.innerHTML += row;
+            });
+
+            const distContainer = document.getElementById('distanceMatrixContainer');
+            let tableHTML = '<table class="min-w-full matrix-table"><thead><tr><th>&nbsp;</th>';
+            allLocations.forEach(loc => { tableHTML += `<th>${loc.name}</th>`; });
+            tableHTML += '</tr></thead><tbody>';
+            allLocations.forEach(loc1 => {
+                tableHTML += `<tr><th>${loc1.name}</th>`;
+                allLocations.forEach(loc2 => {
+                    const dist = haversine(loc1.lat, loc1.lon, loc2.lat, loc2.lon) * 1.3;
+                    tableHTML += `<td>${dist.toFixed(1)}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            tableHTML += '</tbody></table>';
+            distContainer.innerHTML = tableHTML;
         }
 
         // --- EVENT LISTENERS ---
@@ -635,42 +822,179 @@
             document.getElementById('runBtnText').textContent = 'Running...';
 
             setTimeout(() => {
-                const results = runSimulation();
-                updateUI(results);
-                renderCharts(results);
-                renderResultsTable(results);
-
-                chartsContainer.classList.remove('hidden');
-                loaderContainer.classList.add('hidden');
-                loaderContainer.classList.remove('flex');
-                runBtn.disabled = false;
-                document.getElementById('runBtnText').textContent = 'Run Simulation';
+                try {
+                    const results = runSimulation();
+                    updateUI(results);
+                    renderCharts(results);
+                    renderResultsTable(results);
+                } catch (error) {
+                    console.error("Simulation failed:", error);
+                    alert("An error occurred during the simulation. Check the console for details.");
+                } finally {
+                    chartsContainer.classList.remove('hidden');
+                    loaderContainer.classList.add('hidden');
+                    loaderContainer.classList.remove('flex');
+                    runBtn.disabled = false;
+                    document.getElementById('runBtnText').textContent = 'Run Simulation';
+                }
             }, 100);
         });
         
-        paramsToggle.addEventListener('click', () => {
-            parametersView.classList.remove('hidden');
-            stationsView.classList.add('hidden');
-            paramsToggle.classList.add('toggle-btn-active');
-            paramsToggle.classList.remove('toggle-btn-inactive');
-            stationsToggle.classList.add('toggle-btn-inactive');
-            stationsToggle.classList.remove('toggle-btn-active');
+        const toggles = [paramsToggle, stationsToggle, distancesToggle];
+        const views = [parametersView, stationsView, distancesView];
+        
+        toggles.forEach((toggle, index) => {
+            toggle.addEventListener('click', () => {
+                toggles.forEach(t => {
+                    t.classList.remove('toggle-btn-active');
+                    t.classList.add('toggle-btn-inactive');
+                });
+                views.forEach(v => v.classList.add('hidden'));
+
+                toggle.classList.add('toggle-btn-active');
+                toggle.classList.remove('toggle-btn-inactive');
+                views[index].classList.remove('hidden');
+            });
+        });
+        
+        addStationBtn.addEventListener('click', () => {
+            const name = document.getElementById('newName').value.trim();
+            const lat = parseFloat(document.getElementById('newLat').value);
+            const lon = parseFloat(document.getElementById('newLon').value);
+            const dailyRate = parseFloat(document.getElementById('newDailyRate').value);
+            const capacity = parseFloat(document.getElementById('newCapacity').value);
+
+            if (!name || isNaN(lat) || isNaN(lon) || isNaN(dailyRate) || isNaN(capacity) || dailyRate < 0 || capacity <= 0) {
+                alert('Please fill in all fields with valid, positive data.');
+                return;
+            }
+            if(allLocations.some(l => l.name.toLowerCase() === name.toLowerCase())) {
+                alert('An ecostation with this name already exists.');
+                return;
+            }
+
+            allLocations.push({ name, lat, lon, daily_rate_kg: dailyRate, capacity_kg: capacity, type: 'ecostation', isOriginal: false });
+            
+            recalculateAllData();
+            populateStationsTable();
+            renderDistancesView();
+
+            document.getElementById('newName').value = '';
+            document.getElementById('newLat').value = '';
+            document.getElementById('newLon').value = '';
+            document.getElementById('newDailyRate').value = '';
+            document.getElementById('newCapacity').value = '1500';
+
+            alert(`Ecostation "${name}" has been added successfully!`);
         });
 
-        stationsToggle.addEventListener('click', () => {
-            parametersView.classList.add('hidden');
-            stationsView.classList.remove('hidden');
-            stationsToggle.classList.add('toggle-btn-active');
-            stationsToggle.classList.remove('toggle-btn-inactive');
-            paramsToggle.classList.add('toggle-btn-inactive');
-            paramsToggle.classList.remove('toggle-btn-active');
+        locationsTableBody.addEventListener('click', e => {
+            const target = e.target;
+            
+            if (target.closest('.delete-btn')) {
+                 const stationName = target.closest('.delete-btn').dataset.name;
+                 if(confirm(`Are you sure you want to delete "${stationName}"?`)){
+                    const index = allLocations.findIndex(loc => loc.name === stationName && !loc.isOriginal);
+                    if (index > -1) {
+                        allLocations.splice(index, 1);
+                        recalculateAllData();
+                        populateStationsTable();
+                        renderDistancesView();
+                    }
+                }
+                return;
+            }
+
+            if (target.closest('.edit-btn')) {
+                const stationName = target.closest('.edit-btn').dataset.name;
+                const station = allLocations.find(loc => loc.name === stationName);
+                const row = document.querySelector(`tr[data-name="${stationName}"]`);
+                row.innerHTML = `
+                    <td class="px-4 py-3"><input type="text" value="${station.name}" class="w-full p-1 border rounded edit-name"></td>
+                    <td class="px-4 py-3"><input type="number" step="any" value="${station.lat}" class="w-full p-1 border rounded edit-lat"></td>
+                    <td class="px-4 py-3"><input type="number" step="any" value="${station.lon}" class="w-full p-1 border rounded edit-lon"></td>
+                    <td class="px-4 py-3"><input type="number" step="any" value="${station.daily_rate_kg}" class="w-full p-1 border rounded edit-daily-rate"></td>
+                    <td class="px-4 py-3"><input type="number" step="any" value="${station.capacity_kg}" class="w-full p-1 border rounded edit-capacity"></td>
+                    <td class="px-4 py-3">
+                        <div class="flex space-x-2">
+                           <button class="text-green-600 hover:text-green-900 text-sm save-btn" data-name="${station.name}">Save</button>
+                           <button class="text-gray-600 hover:text-gray-900 text-sm cancel-btn" data-name="${station.name}">Cancel</button>
+                        </div>
+                    </td>
+                `;
+                 return;
+            }
+
+            if (target.closest('.cancel-btn')) {
+                renderDistancesView();
+                 return;
+            }
+
+            if (target.closest('.save-btn')) {
+                 const stationName = target.closest('.save-btn').dataset.name;
+                 const row = document.querySelector(`tr[data-name="${stationName}"]`);
+                 const newName = row.querySelector('.edit-name').value.trim();
+                 const newLat = parseFloat(row.querySelector('.edit-lat').value);
+                 const newLon = parseFloat(row.querySelector('.edit-lon').value);
+                 const newDailyRate = parseFloat(row.querySelector('.edit-daily-rate').value);
+                 const newCapacity = parseFloat(row.querySelector('.edit-capacity').value);
+                 
+                 if (!newName || isNaN(newLat) || isNaN(newLon) || isNaN(newDailyRate) || isNaN(newCapacity)) {
+                    alert('Please fill all fields with valid data.');
+                    return;
+                 }
+
+                 if (newName.toLowerCase() !== stationName.toLowerCase() && allLocations.some(l => l.name.toLowerCase() === newName.toLowerCase())) {
+                     alert('An ecostation with this name already exists.');
+                     return;
+                 }
+
+                 const station = allLocations.find(loc => loc.name === stationName);
+                 station.name = newName;
+                 station.lat = newLat;
+                 station.lon = newLon;
+                 station.daily_rate_kg = newDailyRate;
+                 station.capacity_kg = newCapacity;
+
+                 recalculateAllData();
+                 populateStationsTable();
+                 renderDistancesView();
+                  return;
+            }
+        });
+        
+        stationsTableBody.addEventListener('change', (e) => {
+            if (e.target.classList.contains('daily-rate-input')) {
+                const stationName = e.target.dataset.name;
+                const newValue = parseFloat(e.target.value);
+
+                if (isNaN(newValue) || newValue < 0) {
+                    alert('Please enter a valid positive number for the daily rate.');
+                    // Revert to old value
+                    const station = allLocations.find(loc => loc.name === stationName);
+                    e.target.value = station.daily_rate_kg.toFixed(1);
+                    return;
+                }
+
+                const station = allLocations.find(loc => loc.name === stationName);
+                station.daily_rate_kg = newValue;
+
+                recalculateAllData();
+                populateStationsTable(); 
+                renderDistancesView();
+            }
         });
 
+        timeStepInput.addEventListener('change', populateStationsTable);
 
         window.addEventListener('load', () => {
+            recalculateAllData();
             populateStationsTable();
+            renderDistancesView();
             runBtn.click();
         });
     </script>
 </body>
 </html>
+" in the document and I want you to make the following changes to the selected code: "Daily Rate (kg) sütunu da değiştirilebilir olsun, tabi değiştirilirse ondan etkilenen yerler de updatelenecek. bu sayede bir ecostationa gelen atık miktarını arttırsak outputların nasıl değiştiğine bakabileceğiz. bu editlenebilir yapıyı en uygun şekilde kur"
+
