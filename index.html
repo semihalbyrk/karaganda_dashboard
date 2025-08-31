@@ -43,6 +43,9 @@
             background-color: #f9fafb;
             font-weight: 600;
         }
+        .delta-positive { color: #16a34a; }
+        .delta-negative { color: #dc2626; }
+        .delta-neutral { color: #64748b; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -51,6 +54,14 @@
         <div class="mb-8 p-6 bg-white rounded-xl shadow-md">
             <h1 class="text-3xl font-bold text-gray-800">Karaganda Digital Twin Simulation Dashboard</h1>
             <p class="text-gray-600 mt-2">Adjust the simulation parameters to analyze operational efficiency and capacity increase.</p>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="mb-8 flex justify-center">
+            <div class="flex border border-gray-200 rounded-lg p-1 bg-gray-100">
+                <button id="singleModeBtn" class="toggle-btn-active px-6 py-2 text-sm font-medium rounded-md transition-colors duration-200">Single Simulation</button>
+                <button id="compareModeBtn" class="toggle-btn-inactive px-6 py-2 text-sm font-medium rounded-md transition-colors duration-200">Compare Scenarios</button>
+            </div>
         </div>
         
         <!-- Data Source Note -->
@@ -70,7 +81,7 @@
         </div>
 
         <!-- Control Panel Section -->
-        <div class="bg-white p-6 rounded-xl shadow-md h-fit mb-8 max-w-5xl mx-auto">
+        <div id="controlPanel" class="bg-white p-6 rounded-xl shadow-md h-fit mb-8 max-w-5xl mx-auto">
             <!-- Toggle Buttons -->
             <div class="flex border border-gray-200 rounded-lg p-1 mb-6 bg-gray-100 max-w-md mx-auto">
                 <button id="paramsToggle" class="w-1/3 toggle-btn-active rounded-md py-2 text-sm font-medium transition-colors duration-200">Parameters</button>
@@ -84,56 +95,52 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
                         <label for="simulationDays" class="block text-sm font-medium text-gray-700">Simulation Duration (days)</label>
-                        <input type="number" id="simulationDays" value="60" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="simulationDays" value="60" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="numTrucks" class="block text-sm font-medium text-gray-700">Number of Trucks</label>
-                        <input type="number" id="numTrucks" value="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="numTrucks" value="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="avgSpeed" class="block text-sm font-medium text-gray-700">Average Speed (km/h)</label>
-                        <input type="number" id="avgSpeed" value="35" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="avgSpeed" value="35" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="triggerPercent" class="block text-sm font-medium text-gray-700">Fill Level Trigger (%)</label>
-                        <input type="number" id="triggerPercent" value="85" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="triggerPercent" value="85" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="loadingTime" class="block text-sm font-medium text-gray-700">Loading Time (minutes)</label>
-                        <input type="number" id="loadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="loadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="unloadingTime" class="block text-sm font-medium text-gray-700">Unloading Time (minutes)</label>
-                        <input type="number" id="unloadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="unloadingTime" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="workStart" class="block text-sm font-medium text-gray-700">Workday Start</label>
-                        <input type="number" id="workStart" value="8" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="workStart" value="8" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="workEnd" class="block text-sm font-medium text-gray-700">Workday End</label>
-                        <input type="number" id="workEnd" value="15" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="workEnd" value="15" min="0" max="23" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="targetUtilization" class="block text-sm font-medium text-gray-700">Target Utilization (%)</label>
-                        <input type="number" id="targetUtilization" value="85" min="1" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="targetUtilization" value="85" min="1" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div>
                         <label for="timeStep" class="block text-sm font-medium text-gray-700">Time Step (minutes)</label>
-                        <input type="number" id="timeStep" value="10" min="1" max="60" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                        <input type="number" id="timeStep" value="10" min="1" max="60" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                     </div>
                     <div class="md:col-span-1">
                          <label for="queueApproach" class="block text-sm font-medium text-gray-700">Queue Approach</label>
-                         <select id="queueApproach" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                         <select id="queueApproach" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 control-input">
                             <option value="fifo" selected>First-In, First-Out (FIFO)</option>
                             <option value="srt">Smallest Remaining Time (SRT)</option>
                          </select>
                     </div>
                 </div>
-                <button id="runSimulationBtn" class="mt-8 w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 flex items-center justify-center">
-                    <svg id="runIcon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span id="runBtnText">Run Simulation</span>
-                </button>
             </div>
 
             <!-- Stations View -->
@@ -219,27 +226,108 @@
                      <div id="distanceMatrixContainer" class="overflow-x-auto"></div>
                  </div>
             </div>
+
+             <!-- Action Buttons -->
+            <div class="mt-8 flex flex-col gap-4">
+                <button id="runSimulationBtn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 flex items-center justify-center">
+                    <svg id="runIcon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="runBtnText">Run Simulation</span>
+                </button>
+                 <!-- Scenario Management -->
+                <div class="p-4 border rounded-lg bg-gray-50">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4 text-center">Scenario Management</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Scenario A -->
+                        <div id="scenarioA-card" class="p-4 border rounded-lg">
+                             <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-gray-800">Scenario A</h4>
+                                <span id="statusA" class="text-xs font-medium px-2 py-1 rounded-full"></span>
+                             </div>
+                             <p id="summaryA" class="text-xs text-gray-600 mb-4 h-12"></p>
+                             <div id="actionsA" class="space-y-2">
+                                 <button id="editA" class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-300 text-sm">Edit</button>
+                                 <button id="saveA" class="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 text-sm hidden">Save Changes</button>
+                             </div>
+                        </div>
+                        <!-- Scenario B -->
+                        <div id="scenarioB-card" class="p-4 border rounded-lg">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-bold text-gray-800">Scenario B</h4>
+                                <span id="statusB" class="text-xs font-medium px-2 py-1 rounded-full"></span>
+                            </div>
+                            <p id="summaryB" class="text-xs text-gray-600 mb-4 h-12"></p>
+                            <div id="actionsB" class="space-y-2">
+                                <button id="editB" class="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-300 text-sm">Edit</button>
+                                <button id="saveB" class="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-300 text-sm hidden">Save Changes</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- Results Section -->
-        <div>
+        <!-- Comparison Results View -->
+        <div id="comparisonResultsView" class="hidden">
             <!-- Key Metrics -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-xl shadow-md text-center">
                     <h3 class="text-lg font-semibold text-gray-500">Total Waste Collected</h3>
-                    <p id="totalWaste" class="text-4xl font-bold text-indigo-600 mt-2">-- tons</p>
+                    <div id="totalWasteCompare" class="text-3xl font-bold mt-2">--</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-md text-center">
                     <h3 class="text-lg font-semibold text-gray-500">Avg. Truck Utilization</h3>
-                    <p id="avgUtilization" class="text-4xl font-bold text-indigo-600 mt-2">-- %</p>
+                    <div id="avgUtilizationCompare" class="text-3xl font-bold mt-2">--</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-md text-center">
                     <h3 class="text-lg font-semibold text-gray-500">Total Service Failures</h3>
-                    <p id="totalFailures" class="text-4xl font-bold text-red-500 mt-2">--</p>
+                    <div id="totalFailuresCompare" class="text-3xl font-bold mt-2">--</div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-md text-center">
                     <h3 class="text-lg font-semibold text-gray-500">Potential Additional Tonnage</h3>
-                    <p id="potentialTonnage" class="text-4xl font-bold text-green-600 mt-2">-- tons</p>
+                    <div id="potentialTonnageCompare" class="text-3xl font-bold mt-2">--</div>
+                </div>
+            </div>
+             <!-- Charts -->
+            <div class="space-y-8">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Truck Utilization Rate (%)</h3>
+                    <canvas id="utilizationChartCompare"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Average Dispatch Delay (hours)</h3>
+                    <canvas id="waitTimeChartCompare"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Hourly Truck Activity</h3>
+                    <canvas id="hourlyActivityChartCompare"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Service Failures by Station (Overflow Count)</h3>
+                    <canvas id="failuresChartCompare"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Single Sim Results Section -->
+        <div id="singleResultsView">
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Total Waste Collected</h3>
+                    <div id="totalWaste" class="text-4xl font-bold text-indigo-600 mt-2">-- tons</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Avg. Truck Utilization</h3>
+                    <div id="avgUtilization" class="text-4xl font-bold text-indigo-600 mt-2">-- %</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Total Service Failures</h3>
+                    <div id="totalFailures" class="text-4xl font-bold text-red-500 mt-2">--</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-gray-500">Potential Additional Tonnage</h3>
+                    <div id="potentialTonnage" class="text-4xl font-bold text-green-600 mt-2">-- tons</div>
                 </div>
             </div>
 
@@ -281,12 +369,13 @@
                     <canvas id="failuresChart"></canvas>
                 </div>
             </div>
-             <!-- Loader -->
-            <div id="loaderContainer" class="hidden items-center justify-center h-96 bg-white p-6 rounded-xl shadow-md">
-                <div class="text-center">
-                    <div class="loader mx-auto"></div>
-                    <p class="mt-4 text-gray-600 font-semibold">Simulation is running, please wait...</p>
-                </div>
+        </div>
+
+        <!-- Loader -->
+        <div id="loaderContainer" class="hidden items-center justify-center h-96 bg-white p-6 rounded-xl shadow-md">
+            <div class="text-center">
+                <div class="loader mx-auto"></div>
+                <p class="mt-4 text-gray-600 font-semibold">Simulation is running, please wait...</p>
             </div>
         </div>
         
@@ -364,8 +453,8 @@
     </div>
 
     <script>
-        // --- DATA SECTION (now mutable) ---
-        let allLocations = [
+        // --- DATA SECTION ---
+        const initialLocations = [
             { name: 'СОРТИРОВК', lat: 49.976136, lon: 73.21353, daily_rate_kg: 487.1, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
             { name: 'АЛИХАНОВА', lat: 49.812733, lon: 73.10442, daily_rate_kg: 338.2, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
             { name: 'КАЙРАТ', lat: 49.852155, lon: 73.189151, daily_rate_kg: 290.5, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
@@ -381,18 +470,31 @@
             { name: 'Garage', lat: 49.791967, lon: 73.162751, daily_rate_kg: 0, capacity_kg: 0, type: 'garage', isOriginal: true }
         ];
 
-        let stationsData = [];
-        let timeMatrixMinutes = {};
+        let allLocations = JSON.parse(JSON.stringify(initialLocations));
+        let scenarioA = null;
+        let scenarioB = null;
+        let currentlyEditing = null; // 'A', 'B', or null
+
         const GARAGE_NAME = 'Garage';
 
         // --- DOM Elements ---
+        const singleModeBtn = document.getElementById('singleModeBtn');
+        const compareModeBtn = document.getElementById('compareModeBtn');
+        const controlPanel = document.getElementById('controlPanel');
+        const singleResultsView = document.getElementById('singleResultsView');
+        const comparisonResultsView = document.getElementById('comparisonResultsView');
+        
+        const editA_btn = document.getElementById('editA');
+        const saveA_btn = document.getElementById('saveA');
+        const editB_btn = document.getElementById('editB');
+        const saveB_btn = document.getElementById('saveB');
+
         const runBtn = document.getElementById('runSimulationBtn');
         const totalWasteEl = document.getElementById('totalWaste');
         const avgUtilizationEl = document.getElementById('avgUtilization');
         const totalFailuresEl = document.getElementById('totalFailures');
         const potentialTonnageEl = document.getElementById('potentialTonnage');
         const loaderContainer = document.getElementById('loaderContainer');
-        const chartsContainer = document.getElementById('chartsContainer');
         const paramsToggle = document.getElementById('paramsToggle');
         const stationsToggle = document.getElementById('stationsToggle');
         const distancesToggle = document.getElementById('distancesToggle');
@@ -403,11 +505,11 @@
         const addStationBtn = document.getElementById('addStationBtn');
         const locationsTableBody = document.getElementById('locationsTableBody');
         const timeStepInput = document.getElementById('timeStep');
-        const queueApproachSelect = document.getElementById('queueApproach');
         const stationsTableBody = document.getElementById('stationsTableBody');
 
 
-        let utilizationChartInstance, failuresChartInstance, waitTimeChartInstance, hourlyActivityChartInstance;
+        let utilChartSingle, failuresChartSingle, waitTimeChartSingle, hourlyActivityChartSingle;
+        let utilChartCompare, waitTimeChartCompare, hourlyActivityChartCompare, failuresChartCompare;
         
         // --- DYNAMIC DATA CALCULATION ---
 
@@ -422,30 +524,179 @@
             return R * c;
         }
 
-        function recalculateAllData() {
-            stationsData = allLocations
-                .filter(loc => loc.type === 'ecostation')
-                .map(loc => ({
-                    station_name: loc.name,
-                    daily_rate_kg: loc.daily_rate_kg,
-                    max_capacity_kg: loc.capacity_kg
-                }));
-
+        function calculateMatrices(locations, avgSpeed) {
             const ROAD_NETWORK_FACTOR = 1.3;
-            const avgSpeed = parseFloat(document.getElementById('avgSpeed').value) || 35;
-            timeMatrixMinutes = {};
-            allLocations.forEach(loc1 => {
-                timeMatrixMinutes[loc1.name] = {};
-                allLocations.forEach(loc2 => {
+            const matrix = {};
+            locations.forEach(loc1 => {
+                matrix[loc1.name] = {};
+                locations.forEach(loc2 => {
                     const dist = haversine(loc1.lat, loc1.lon, loc2.lat, loc2.lon);
                     const roadDist = dist * ROAD_NETWORK_FACTOR;
                     const timeHours = avgSpeed > 0 ? roadDist / avgSpeed : 0;
-                    timeMatrixMinutes[loc1.name][loc2.name] = timeHours * 60;
+                    matrix[loc1.name][loc2.name] = timeHours * 60;
                 });
             });
+            return matrix;
+        }
+        
+        function getCurrentParams() {
+             return {
+                SIMULATION_DAYS: parseInt(document.getElementById('simulationDays').value),
+                NUM_TRUCKS: parseInt(document.getElementById('numTrucks').value),
+                AVG_SPEED: parseFloat(document.getElementById('avgSpeed').value),
+                COLLECTION_TRIGGER_PERCENT: parseInt(document.getElementById('triggerPercent').value) / 100,
+                WORK_START_HOUR: parseInt(document.getElementById('workStart').value),
+                WORK_END_HOUR: parseInt(document.getElementById('workEnd').value),
+                LOADING_TIME_MINUTES: parseInt(document.getElementById('loadingTime').value),
+                UNLOADING_TIME_MINUTES: parseInt(document.getElementById('unloadingTime').value),
+                TARGET_UTILIZATION: parseInt(document.getElementById('targetUtilization').value) / 100,
+                TIME_STEP_MINUTES: parseInt(timeStepInput.value),
+                QUEUE_APPROACH: document.getElementById('queueApproach').value,
+            };
+        }
+
+        function loadStateToPanel(state) {
+            // Load params
+            const params = state.params;
+            Object.keys(params).forEach(key => {
+                 const inputId = {
+                    COLLECTION_TRIGGER_PERCENT: 'triggerPercent',
+                    QUEUE_APPROACH: 'queueApproach',
+                }[key] || key.replace(/_([a-z])/g, g => g[1].toUpperCase()).replace('MINUTES','Time').replace('HOUR','');
+                 
+                const el = document.getElementById(inputId.charAt(0).toLowerCase() + inputId.slice(1));
+                if (el) {
+                    if (key === 'COLLECTION_TRIGGER_PERCENT' || key === 'TARGET_UTILIZATION') {
+                         el.value = params[key] * 100;
+                    } else {
+                         el.value = params[key];
+                    }
+                }
+            });
+            
+            // Load locations
+            allLocations = JSON.parse(JSON.stringify(state.locations));
+            populateStationsTable();
+            renderDistancesView();
+        }
+
+        function compareAndGenerateSummaries(sA, sB) {
+            let summaryA = [];
+            let summaryB = [];
+
+            if (!sA || !sB) return { summaryA: '', summaryB: '' };
+
+            // Compare Number of Trucks
+            if (sA.params.NUM_TRUCKS !== sB.params.NUM_TRUCKS) {
+                summaryA.push(`${sA.params.NUM_TRUCKS} Trucks`);
+                summaryB.push(`${sB.params.NUM_TRUCKS} Trucks`);
+            }
+
+            // Compare Queue Approach
+            if (sA.params.QUEUE_APPROACH !== sB.params.QUEUE_APPROACH) {
+                summaryA.push(`${sA.params.QUEUE_APPROACH.toUpperCase()}`);
+                summaryB.push(`${sB.params.QUEUE_APPROACH.toUpperCase()}`);
+            }
+
+            // Compare Station Count
+            const stationCountA = sA.locations.filter(loc => loc.type === 'ecostation').length;
+            const stationCountB = sB.locations.filter(loc => loc.type === 'ecostation').length;
+            if (stationCountA !== stationCountB) {
+                summaryA.push(`${stationCountA} Stations`);
+                summaryB.push(`${stationCountB} Stations`);
+            }
+
+            // Compare Work Hours
+            if (sA.params.WORK_START_HOUR !== sB.params.WORK_START_HOUR || sA.params.WORK_END_HOUR !== sB.params.WORK_END_HOUR) {
+                summaryA.push(`Hours: ${sA.params.WORK_START_HOUR}:00-${sA.params.WORK_END_HOUR}:00`);
+                summaryB.push(`Hours: ${sB.params.WORK_START_HOUR}:00-${sB.params.WORK_END_HOUR}:00`);
+            }
+
+            // Compare Trigger Percent
+            if (sA.params.COLLECTION_TRIGGER_PERCENT !== sB.params.COLLECTION_TRIGGER_PERCENT) {
+                summaryA.push(`Trigger: ${sA.params.COLLECTION_TRIGGER_PERCENT * 100}%`);
+                summaryB.push(`Trigger: ${sB.params.COLLECTION_TRIGGER_PERCENT * 100}%`);
+            }
+            
+            // If no differences, show a default summary
+            if (summaryA.length === 0) {
+               summaryA.push(`${sA.params.NUM_TRUCKS} Trucks, ${sA.params.QUEUE_APPROACH.toUpperCase()}, ${stationCountA} Stations`);
+               summaryB.push(`${sB.params.NUM_TRUCKS} Trucks, ${sB.params.QUEUE_APPROACH.toUpperCase()}, ${stationCountB} Stations`);
+            }
+
+            return {
+                summaryA: summaryA.join('<br>'),
+                summaryB: summaryB.join('<br>')
+            };
+        }
+
+
+        function updateControlPanelUI() {
+            const summaryElA = document.getElementById('summaryA');
+            const summaryElB = document.getElementById('summaryB');
+
+            // Handle summaries
+            const summaries = compareAndGenerateSummaries(scenarioA, scenarioB);
+            summaryElA.innerHTML = scenarioA ? summaries.summaryA : 'No scenario saved yet.';
+            summaryElB.innerHTML = scenarioB ? summaries.summaryB : 'No scenario saved yet.';
+
+
+             // Update Scenario A card
+            if (currentlyEditing === 'A') {
+                editA_btn.classList.add('hidden');
+                saveA_btn.classList.remove('hidden');
+                editB_btn.disabled = true;
+                editB_btn.classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('statusA').textContent = 'Editing...';
+                document.getElementById('statusA').className = 'text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-800';
+            } else {
+                editA_btn.classList.remove('hidden');
+                saveA_btn.classList.add('hidden');
+                editB_btn.disabled = false;
+                editB_btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                 if(scenarioA){
+                    document.getElementById('statusA').textContent = 'Saved';
+                    document.getElementById('statusA').className = 'text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-800';
+                 } else {
+                    document.getElementById('statusA').textContent = 'Not Saved';
+                    document.getElementById('statusA').className = 'text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-800';
+                 }
+            }
+
+            // Update Scenario B card
+            if (currentlyEditing === 'B') {
+                 editB_btn.classList.add('hidden');
+                 saveB_btn.classList.remove('hidden');
+                 editA_btn.disabled = true;
+                 editA_btn.classList.add('opacity-50', 'cursor-not-allowed');
+                 document.getElementById('statusB').textContent = 'Editing...';
+                 document.getElementById('statusB').className = 'text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 text-yellow-800';
+            } else {
+                 editB_btn.classList.remove('hidden');
+                 saveB_btn.classList.add('hidden');
+                 editA_btn.disabled = false;
+                 editA_btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                 if(scenarioB){
+                    document.getElementById('statusB').textContent = 'Saved';
+                    document.getElementById('statusB').className = 'text-xs font-medium px-2 py-1 rounded-full bg-green-100 text-green-800';
+                 } else {
+                     document.getElementById('statusB').textContent = 'Not Saved';
+                     document.getElementById('statusB').className = 'text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-800';
+                 }
+            }
+            
+            // Update Compare button
+            if (currentlyEditing || !scenarioA || !scenarioB) {
+                compareModeBtn.disabled = true;
+                compareModeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                compareModeBtn.disabled = false;
+                compareModeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         }
         
         function calculateEffectiveWaitMinutes(request_minute, assignment_minute, work_start_hour, work_end_hour, interval) {
+            // ... (identical to previous version)
             let effective_wait_minutes = 0;
             for (let m = request_minute; m < assignment_minute; m += interval) {
                 const day_of_week = Math.floor(m / (24 * 60)) % 7;
@@ -459,27 +710,22 @@
         }
 
         // --- SIMULATION ENGINE ---
-        function runSimulation() {
-             const params = {
-                SIMULATION_DAYS: parseInt(document.getElementById('simulationDays').value),
-                NUM_TRUCKS: parseInt(document.getElementById('numTrucks').value),
-                COLLECTION_TRIGGER_PERCENT: parseInt(document.getElementById('triggerPercent').value) / 100,
-                WORK_START_HOUR: parseInt(document.getElementById('workStart').value),
-                WORK_END_HOUR: parseInt(document.getElementById('workEnd').value),
-                LOADING_TIME_MINUTES: parseInt(document.getElementById('loadingTime').value),
-                UNLOADING_TIME_MINUTES: parseInt(document.getElementById('unloadingTime').value),
-                TARGET_UTILIZATION: parseInt(document.getElementById('targetUtilization').value) / 100,
-                TIME_STEP_MINUTES: parseInt(timeStepInput.value),
-                QUEUE_APPROACH: queueApproachSelect.value,
-            };
-
-            recalculateAllData();
+        function runSimulation(params, locations) {
+           // ... (Simulation engine code is identical to previous version)
+            const timeMatrix = calculateMatrices(locations, params.AVG_SPEED);
+            const simStationsData = locations
+                .filter(loc => loc.type === 'ecostation')
+                .map(loc => ({
+                    station_name: loc.name,
+                    daily_rate_kg: loc.daily_rate_kg,
+                    max_capacity_kg: loc.capacity_kg
+                }));
 
             const effectiveWorkdayHours = params.WORK_END_HOUR - params.WORK_START_HOUR;
             const effectiveWorkdayMinutes = effectiveWorkdayHours * 60;
             const simTotalMinutes = params.SIMULATION_DAYS * 24 * 60;
 
-            let ecostations = JSON.parse(JSON.stringify(stationsData));
+            let ecostations = JSON.parse(JSON.stringify(simStationsData));
             ecostations.forEach(s => {
                 s.current_waste_kg = 0.0;
                 s.rate_per_step = effectiveWorkdayMinutes > 0 ? (s.daily_rate_kg / effectiveWorkdayMinutes) * params.TIME_STEP_MINUTES : 0;
@@ -546,8 +792,8 @@
                         if (!availableTruck) break;
 
                         const station_name = request.station_name;
-                        const go_time = timeMatrixMinutes[GARAGE_NAME][station_name];
-                        const return_time = timeMatrixMinutes[station_name][GARAGE_NAME];
+                        const go_time = timeMatrix[GARAGE_NAME][station_name];
+                        const return_time = timeMatrix[station_name][GARAGE_NAME];
                         const total_trip_duration_minutes = go_time + params.LOADING_TIME_MINUTES + return_time + params.UNLOADING_TIME_MINUTES;
                         
                         const current_minute_of_day = minute % (24*60);
@@ -620,7 +866,7 @@
                 wait_times[log.station_name].push(log.dispatch_delay_minutes);
             });
             const avg_wait_times_hours = {};
-            stationsData.forEach(s => avg_wait_times_hours[s.station_name] = 0); 
+            simStationsData.forEach(s => avg_wait_times_hours[s.station_name] = 0); 
             for (const station in wait_times) {
                 const avg_minutes = wait_times[station].reduce((a, b) => a + b, 0) / wait_times[station].length;
                 avg_wait_times_hours[station] = avg_minutes / 60;
@@ -630,7 +876,7 @@
             const normalizedHourlyActivity = hourlyActivity.map(val => val / 60 / num_work_days);
             
             const resultsByStation = {};
-            stationsData.forEach(s => {
+            simStationsData.forEach(s => {
                 resultsByStation[s.station_name] = { trips: 0, collected: 0 };
             });
             collection_logs.forEach(log => {
@@ -648,10 +894,10 @@
 
         // --- UI UPDATE & RENDER ---
         function updateUI(results) {
-             totalWasteEl.textContent = `${(results.total_collected_waste_kg / 1000).toFixed(2)} tons`;
-            avgUtilizationEl.textContent = `${results.overall_utilization.toFixed(2)} %`;
-            totalFailuresEl.textContent = results.service_failures.length;
-            potentialTonnageEl.textContent = `${(results.potential_tonnage_increase_kg / 1000).toFixed(2)} tons`;
+            totalWasteEl.innerHTML = `<p>${(results.total_collected_waste_kg / 1000).toFixed(2)} tons</p>`;
+            avgUtilizationEl.innerHTML = `<p>${results.overall_utilization.toFixed(2)} %</p>`;
+            totalFailuresEl.innerHTML = `<p>${results.service_failures.length}</p>`;
+            potentialTonnageEl.innerHTML = `<p>${(results.potential_tonnage_increase_kg / 1000).toFixed(2)} tons</p>`;
         }
         
         function renderResultsTable(results) {
@@ -674,8 +920,8 @@
 
         function renderCharts(results) {
              const utilCtx = document.getElementById('utilizationChart').getContext('2d');
-            if (utilizationChartInstance) utilizationChartInstance.destroy();
-            utilizationChartInstance = new Chart(utilCtx, {
+            if (utilChartSingle) utilChartSingle.destroy();
+            utilChartSingle = new Chart(utilCtx, {
                 type: 'bar',
                 data: {
                     labels: results.truckStatus.map(t => `Truck ${t.truck_id}`),
@@ -690,8 +936,8 @@
 
             const waitTimeCtx = document.getElementById('waitTimeChart').getContext('2d');
             const waitTimeData = Object.entries(results.avg_wait_times_hours).sort((a,b) => b[1] - a[1]);
-            if(waitTimeChartInstance) waitTimeChartInstance.destroy();
-            waitTimeChartInstance = new Chart(waitTimeCtx, {
+            if(waitTimeChartSingle) waitTimeChartSingle.destroy();
+            waitTimeChartSingle = new Chart(waitTimeCtx, {
                 type: 'bar',
                 data: {
                     labels: waitTimeData.map(item => item[0]),
@@ -707,8 +953,8 @@
             const hourlyActivityCtx = document.getElementById('hourlyActivityChart').getContext('2d');
             const workStart = parseInt(document.getElementById('workStart').value);
             const workEnd = parseInt(document.getElementById('workEnd').value);
-            if(hourlyActivityChartInstance) hourlyActivityChartInstance.destroy();
-            hourlyActivityChartInstance = new Chart(hourlyActivityCtx, {
+            if(hourlyActivityChartSingle) hourlyActivityChartSingle.destroy();
+            hourlyActivityChartSingle = new Chart(hourlyActivityCtx, {
                 type: 'bar',
                 data: {
                     labels: Array.from({length: 24}, (_, i) => `${i}:00`),
@@ -726,8 +972,8 @@
 
             const failuresCtx = document.getElementById('failuresChart').getContext('2d');
             const failureData = Object.entries(results.failures_by_station).sort((a, b) => b[1] - a[1]);
-            if (failuresChartInstance) failuresChartInstance.destroy();
-            failuresChartInstance = new Chart(failuresCtx, {
+            if (failuresChartSingle) failuresChartSingle.destroy();
+            failuresChartSingle = new Chart(failuresCtx, {
                 type: 'bar',
                 data: {
                     labels: failureData.map(item => item[0]),
@@ -760,7 +1006,7 @@
                     <tr>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${station.name}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                             <input type="number" value="${station.daily_rate_kg.toFixed(1)}" data-name="${station.name}" class="w-24 p-1 border rounded daily-rate-input">
+                             <input type="number" value="${station.daily_rate_kg.toFixed(1)}" data-name="${station.name}" class="w-24 p-1 border rounded daily-rate-input control-input">
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${ratePerStep.toFixed(2)}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">${monthlyTons}</td>
@@ -812,10 +1058,95 @@
             distContainer.innerHTML = tableHTML;
         }
 
+        function updateComparisonUI(resultsA, resultsB) {
+            const createMetricHTML = (valA, valB, unit, isLowerBetter = false) => {
+                const delta = valB - valA;
+                const pctChange = valA !== 0 ? (delta / valA) * 100 : (valB > 0 ? Infinity : 0);
+                let deltaClass = 'delta-neutral';
+                let sign = delta >= 0 ? '+' : '';
+                if (pctChange > 0.1) deltaClass = isLowerBetter ? 'delta-negative' : 'delta-positive';
+                if (pctChange < -0.1) deltaClass = isLowerBetter ? 'delta-positive' : 'delta-negative';
+
+                return `
+                    <div class="flex items-center justify-center space-x-4">
+                        <p class="text-indigo-600">${valA.toFixed(2)} ${unit}</p>
+                        <p class="text-gray-400 text-2xl font-light">vs</p>
+                        <p class="text-teal-600">${valB.toFixed(2)} ${unit}</p>
+                    </div>
+                    <p class="text-sm font-semibold mt-2 ${deltaClass}">
+                        ${sign}${delta.toFixed(2)} ${unit} (${pctChange === Infinity ? 'N/A' : `${sign}${pctChange.toFixed(1)}%`})
+                    </p>
+                `;
+            };
+
+            document.getElementById('totalWasteCompare').innerHTML = createMetricHTML(resultsA.total_collected_waste_kg / 1000, resultsB.total_collected_waste_kg / 1000, 'tons');
+            document.getElementById('avgUtilizationCompare').innerHTML = createMetricHTML(resultsA.overall_utilization, resultsB.overall_utilization, '%');
+            document.getElementById('totalFailuresCompare').innerHTML = createMetricHTML(resultsA.service_failures.length, resultsB.service_failures.length, '', true);
+            document.getElementById('potentialTonnageCompare').innerHTML = createMetricHTML(resultsA.potential_tonnage_increase_kg/1000, resultsB.potential_tonnage_increase_kg/1000, 'tons');
+        }
+
+        function renderComparisonCharts(resultsA, resultsB) {
+            const utilCtx = document.getElementById('utilizationChartCompare').getContext('2d');
+            if (utilChartCompare) utilChartCompare.destroy();
+            utilChartCompare = new Chart(utilCtx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: Math.max(resultsA.truckStatus.length, resultsB.truckStatus.length)}, (_, i) => `Truck ${i+1}`),
+                    datasets: [
+                        { label: 'Scenario A', data: resultsA.truckStatus.map(t => t.utilization.toFixed(2)), backgroundColor: 'rgba(79, 70, 229, 0.7)' },
+                        { label: 'Scenario B', data: resultsB.truckStatus.map(t => t.utilization.toFixed(2)), backgroundColor: 'rgba(13, 148, 136, 0.7)' }
+                    ]
+                },
+                options: { scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+
+             const waitTimeCtx = document.getElementById('waitTimeChartCompare').getContext('2d');
+            const stationNames = [...new Set([...Object.keys(resultsA.avg_wait_times_hours), ...Object.keys(resultsB.avg_wait_times_hours)])];
+            if(waitTimeChartCompare) waitTimeChartCompare.destroy();
+            waitTimeChartCompare = new Chart(waitTimeCtx, {
+                type: 'bar',
+                data: {
+                    labels: stationNames,
+                    datasets: [
+                         { label: 'Scenario A', data: stationNames.map(name => resultsA.avg_wait_times_hours[name] || 0), backgroundColor: 'rgba(79, 70, 229, 0.7)' },
+                         { label: 'Scenario B', data: stationNames.map(name => resultsB.avg_wait_times_hours[name] || 0), backgroundColor: 'rgba(13, 148, 136, 0.7)' }
+                    ]
+                },
+                options: { indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+            });
+
+             const failuresCtx = document.getElementById('failuresChartCompare').getContext('2d');
+             if(failuresChartCompare) failuresChartCompare.destroy();
+             failuresChartCompare = new Chart(failuresCtx, {
+                 type: 'bar',
+                 data: {
+                     labels: stationNames,
+                     datasets: [
+                         { label: 'Scenario A', data: stationNames.map(name => resultsA.failures_by_station[name] || 0), backgroundColor: 'rgba(79, 70, 229, 0.7)' },
+                         { label: 'Scenario B', data: stationNames.map(name => resultsB.failures_by_station[name] || 0), backgroundColor: 'rgba(13, 148, 136, 0.7)' }
+                    ]
+                 },
+                 options: { indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+             });
+
+            const hourlyActivityCtx = document.getElementById('hourlyActivityChartCompare').getContext('2d');
+            if(hourlyActivityChartCompare) hourlyActivityChartCompare.destroy();
+            hourlyActivityChartCompare = new Chart(hourlyActivityCtx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [
+                        { label: 'Scenario A', data: resultsA.normalizedHourlyActivity, backgroundColor: 'rgba(79, 70, 229, 0.7)' },
+                        { label: 'Scenario B', data: resultsB.normalizedHourlyActivity, backgroundColor: 'rgba(13, 148, 136, 0.7)' }
+                    ]
+                },
+                options: { scales: { y: { beginAtZero: true } } }
+            });
+        }
+
         // --- EVENT LISTENERS ---
         runBtn.addEventListener('click', () => {
-            chartsContainer.classList.add('hidden');
-            resultsTableView.classList.add('hidden');
+            singleResultsView.classList.add('hidden');
             loaderContainer.classList.remove('hidden');
             loaderContainer.classList.add('flex');
             runBtn.disabled = true;
@@ -823,7 +1154,8 @@
 
             setTimeout(() => {
                 try {
-                    const results = runSimulation();
+                    const params = getCurrentParams();
+                    const results = runSimulation(params, allLocations);
                     updateUI(results);
                     renderCharts(results);
                     renderResultsTable(results);
@@ -831,7 +1163,7 @@
                     console.error("Simulation failed:", error);
                     alert("An error occurred during the simulation. Check the console for details.");
                 } finally {
-                    chartsContainer.classList.remove('hidden');
+                    singleResultsView.classList.remove('hidden');
                     loaderContainer.classList.add('hidden');
                     loaderContainer.classList.remove('flex');
                     runBtn.disabled = false;
@@ -875,9 +1207,9 @@
 
             allLocations.push({ name, lat, lon, daily_rate_kg: dailyRate, capacity_kg: capacity, type: 'ecostation', isOriginal: false });
             
-            recalculateAllData();
             populateStationsTable();
             renderDistancesView();
+            updateControlPanelUI();
 
             document.getElementById('newName').value = '';
             document.getElementById('newLat').value = '';
@@ -897,9 +1229,9 @@
                     const index = allLocations.findIndex(loc => loc.name === stationName && !loc.isOriginal);
                     if (index > -1) {
                         allLocations.splice(index, 1);
-                        recalculateAllData();
                         populateStationsTable();
                         renderDistancesView();
+                        updateControlPanelUI();
                     }
                 }
                 return;
@@ -956,9 +1288,9 @@
                  station.daily_rate_kg = newDailyRate;
                  station.capacity_kg = newCapacity;
 
-                 recalculateAllData();
                  populateStationsTable();
                  renderDistancesView();
+                 updateControlPanelUI();
                   return;
             }
         });
@@ -970,7 +1302,6 @@
 
                 if (isNaN(newValue) || newValue < 0) {
                     alert('Please enter a valid positive number for the daily rate.');
-                    // Revert to old value
                     const station = allLocations.find(loc => loc.name === stationName);
                     e.target.value = station.daily_rate_kg.toFixed(1);
                     return;
@@ -979,16 +1310,104 @@
                 const station = allLocations.find(loc => loc.name === stationName);
                 station.daily_rate_kg = newValue;
 
-                recalculateAllData();
                 populateStationsTable(); 
                 renderDistancesView();
+                updateControlPanelUI();
             }
         });
 
-        timeStepInput.addEventListener('change', populateStationsTable);
+        document.querySelectorAll('.control-input').forEach(input => {
+            input.addEventListener('change', updateControlPanelUI);
+        });
+        timeStepInput.addEventListener('change', () => {
+             populateStationsTable();
+             updateControlPanelUI();
+        });
+
+        singleModeBtn.addEventListener('click', () => {
+            singleModeBtn.classList.add('toggle-btn-active');
+            singleModeBtn.classList.remove('toggle-btn-inactive');
+            compareModeBtn.classList.remove('toggle-btn-active');
+            compareModeBtn.classList.add('toggle-btn-inactive');
+            
+            controlPanel.classList.remove('hidden');
+            singleResultsView.classList.remove('hidden');
+            comparisonResultsView.classList.add('hidden');
+        });
+
+        compareModeBtn.addEventListener('click', () => {
+             if (!scenarioA || !scenarioB) {
+                alert('Please save both Scenario A and Scenario B before comparing.');
+                return;
+            }
+            compareModeBtn.classList.add('toggle-btn-active');
+            compareModeBtn.classList.remove('toggle-btn-inactive');
+            singleModeBtn.classList.remove('toggle-btn-active');
+            singleModeBtn.classList.add('toggle-btn-inactive');
+            
+            controlPanel.classList.add('hidden');
+            singleResultsView.classList.add('hidden');
+            comparisonResultsView.classList.remove('hidden');
+            
+            loaderContainer.classList.remove('hidden');
+            loaderContainer.classList.add('flex');
+            comparisonResultsView.classList.add('hidden');
+
+             setTimeout(() => {
+                try {
+                    const resultsA = runSimulation(scenarioA.params, scenarioA.locations);
+                    const resultsB = runSimulation(scenarioB.params, scenarioB.locations);
+                    updateComparisonUI(resultsA, resultsB);
+                    renderComparisonCharts(resultsA, resultsB);
+                } catch(e) {
+                    console.error("Comparison run failed", e);
+                    alert("Error running comparison. Check console.")
+                } finally {
+                    loaderContainer.classList.add('hidden');
+                    loaderContainer.classList.remove('flex');
+                    comparisonResultsView.classList.remove('hidden');
+                }
+            }, 100);
+        });
+        
+        editA_btn.addEventListener('click', () => {
+            currentlyEditing = 'A';
+            if (scenarioA) loadStateToPanel(scenarioA);
+            updateControlPanelUI();
+        });
+         saveA_btn.addEventListener('click', () => {
+            scenarioA = {
+                params: getCurrentParams(),
+                locations: JSON.parse(JSON.stringify(allLocations))
+            };
+            currentlyEditing = null;
+            updateControlPanelUI();
+            alert('Scenario A saved!');
+        });
+
+        editB_btn.addEventListener('click', () => {
+            currentlyEditing = 'B';
+            if (scenarioB) loadStateToPanel(scenarioB);
+            updateControlPanelUI();
+        });
+         saveB_btn.addEventListener('click', () => {
+            scenarioB = {
+                params: getCurrentParams(),
+                locations: JSON.parse(JSON.stringify(allLocations))
+            };
+            currentlyEditing = null;
+            updateControlPanelUI();
+            alert('Scenario B saved!');
+        });
+
 
         window.addEventListener('load', () => {
-            recalculateAllData();
+            // Save initial state as Scenario A by default
+            scenarioA = {
+                params: getCurrentParams(),
+                locations: JSON.parse(JSON.stringify(allLocations))
+            };
+            updateControlPanelUI();
             populateStationsTable();
             renderDistancesView();
             runBtn.click();
@@ -996,5 +1415,4 @@
     </script>
 </body>
 </html>
-" in the document and I want you to make the following changes to the selected code: "Daily Rate (kg) sütunu da değiştirilebilir olsun, tabi değiştirilirse ondan etkilenen yerler de updatelenecek. bu sayede bir ecostationa gelen atık miktarını arttırsak outputların nasıl değiştiğine bakabileceğiz. bu editlenebilir yapıyı en uygun şekilde kur"
 
