@@ -329,7 +329,7 @@
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Average Dispatch Delay (hours)</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Normalized Wait Time (min/km)</h3>
                     <div class="relative h-96">
                         <canvas id="waitTimeChartCompare"></canvas>
                     </div>
@@ -420,7 +420,7 @@
                     </div>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">Average Dispatch Delay (hours)</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Normalized Wait Time (min/km)</h3>
                     <div class="relative h-96">
                         <canvas id="waitTimeChart"></canvas>
                     </div>
@@ -546,28 +546,17 @@
                     <div class="accordion-content hidden prose max-w-none text-gray-600 pb-4">
                          <ul class="list-disc pl-5 space-y-2">
                             <li>
-                                <strong>Truck Utilization Rate:</strong> This chart shows the percentage of available work minutes that each truck spent on a trip.
-                                <ol class="list-decimal pl-6 mt-1">
-                                    <li><strong>Calculate Total Available Work Minutes:</strong> `Number of Workdays (excl. Sundays)` * `Effective Daily Work Hours` * 60.</li>
-                                    <li><strong>Track Total Busy Minutes:</strong> During the simulation, the `total_trip_duration_minutes` is added to that truck's `total_work_minutes`.</li>
-                                    <li><strong>Calculate Percentage:</strong> (`Total Work Minutes` / `Total Available Work Minutes`) * 100.</li>
-                                </ol>
+                                <strong>Truck Utilization Rate:</strong> This chart shows the percentage of available work minutes that each truck spent on a trip. It's calculated as (`Total Work Minutes` / `Total Available Work Minutes`) * 100.
+                            </li>
+                             <li>
+                                <strong>Normalized Wait Time:</strong> This metric measures service responsiveness, adjusted for distance. It prevents distant stations from being unfairly penalized.
+                                <br>
+                                `Normalized Wait Time = (Time of Arrival - Time of Request) / Distance`
+                                <br>
+                                The "Distance" is from the garage for direct shipments, or from the previous stop for optimized routes. A lower value (in min/km) is better.
                             </li>
                             <li>
                                 <strong>Potential Additional Tonnage:</strong> This metric quantifies the opportunity cost of idle truck time against a configurable target.
-                                <ol class="list-decimal pl-6 mt-1">
-                                    <li><strong>Find Usable Idle Minutes:</strong> The difference between `Target Busy Minutes` (based on Target Utilization %) and `Current Busy Minutes`.</li>
-                                    <li><strong>Calculate Average Trip Efficiency:</strong> The simulation finds the `Average Tonnage per Trip` and `Average Duration per Trip (minutes)` from all completed collections.</li>
-                                    <li><strong>Calculate Potential:</strong> `Potential Extra Trips` = `Usable Idle Minutes` / `Average Duration per Trip`. The final result is `Potential Extra Trips` * `Average Tonnage per Trip`.</li>
-                                </ol>
-                            </li>
-                            <li>
-                                <strong>Average Dispatch Delay:</strong> This measures the time a request waits before a truck is dispatched, counting only effective work minutes.
-                                <ol class="list-decimal pl-6 mt-1">
-                                   <li><strong>Log Timestamps:</strong> The engine logs the `request_minute` and `assignment_minute` for each collection.</li>
-                                   <li><strong>Calculate Effective Delay:</strong> A function iterates from the request minute to the assignment minute, counting only the minutes that fall within the effective workday (e.g., 08:00-16:00) and are not on a Sunday.</li>
-                                   <li><strong>Average Results:</strong> The engine averages these delays for each station and converts the final result to hours.</li>
-                                </ol>
                             </li>
                             <li>
                                 <strong>Hourly Truck Activity:</strong> This graph shows the operational rhythm of the workday by showing the average number of trucks that are busy during each hour.</li>
@@ -846,19 +835,6 @@
             }
         }
         
-        function calculateEffectiveWaitMinutes(request_minute, assignment_minute, work_start_hour, work_end_hour, interval) {
-            let effective_wait_minutes = 0;
-            for (let m = request_minute; m < assignment_minute; m += interval) {
-                const day_of_week = Math.floor(m / (24 * 60)) % 7;
-                const hour_of_day = Math.floor((m % (24*60)) / 60);
-
-                if (day_of_week !== 6 && hour_of_day >= work_start_hour && hour_of_day < work_end_hour) {
-                    effective_wait_minutes += interval;
-                }
-            }
-            return effective_wait_minutes;
-        }
-
         // --- SIMULATION ENGINE (Direct Shipment) ---
         function runSimulation(params, locations) {
             const { timeMatrix, distanceMatrix } = calculateMatrices(locations, params.AVG_SPEED);
@@ -966,13 +942,16 @@
                             station.current_waste_kg = 0.0;
                             availableTruck.total_collected_kg += collected_amount;
 
-                            const dispatch_delay_minutes = calculateEffectiveWaitMinutes(request.request_minute, assignment_minute, params.WORK_START_HOUR, params.WORK_END_HOUR, params.TIME_STEP_MINUTES);
+                            const arrival_minute = assignment_minute + Math.ceil(go_time);
+                            const raw_wait_time = arrival_minute - request.request_minute;
+                            const distance = distanceMatrix[GARAGE_NAME][station_name];
+                            const normalized_wait_time = distance > 0 ? raw_wait_time / distance : raw_wait_time;
 
                             simulationLog.push({
                                 event: 'COLLECTION',
                                 station_name: station_name,
                                 collected_kg: collected_amount,
-                                dispatch_delay_minutes: dispatch_delay_minutes,
+                                normalized_wait_time: normalized_wait_time,
                                 trip_duration_minutes: total_trip_duration_minutes,
                             });
                             
@@ -1120,17 +1099,33 @@
                             availableTruck.total_work_minutes += trip_duration;
                             availableTruck.trips_made += 1;
                             availableTruck.total_km += route_distance_km;
+                            
+                            let arrival_at_current_stop = minute;
+                            let previous_location = GARAGE_NAME;
 
                             route.forEach(station => {
-                                const dispatch_delay_minutes = calculateEffectiveWaitMinutes(station.request_minute, minute, params.WORK_START_HOUR, params.WORK_END_HOUR, params.TIME_STEP_MINUTES);
+                                const travel_time_to_stop = timeMatrix[previous_location][station.station_name];
+                                arrival_at_current_stop += travel_time_to_stop;
+
+                                const raw_wait_time = arrival_at_current_stop - station.request_minute;
+                                const distance_leg = distanceMatrix[previous_location][station.station_name];
+                                const normalized_wait_time = distance_leg > 0 ? raw_wait_time / distance_leg : raw_wait_time;
+
                                 simulationLog.push({
-                                    event: 'COLLECTION', station_name: station.station_name, collected_kg: station.current_waste_kg,
-                                    dispatch_delay_minutes: dispatch_delay_minutes, trip_duration_minutes: trip_duration,
+                                    event: 'COLLECTION', 
+                                    station_name: station.station_name, 
+                                    collected_kg: station.current_waste_kg,
+                                    normalized_wait_time: normalized_wait_time, 
+                                    trip_duration_minutes: trip_duration,
                                 });
+
                                 availableTruck.total_collected_kg += station.current_waste_kg;
                                 station.current_waste_kg = 0;
                                 station.is_in_route = false;
                                 station.request_minute = -1;
+
+                                arrival_at_current_stop += params.LOADING_TIME_MINUTES;
+                                previous_location = station.station_name;
                             });
                         }
                     }
@@ -1173,13 +1168,13 @@
             const wait_times = {};
             collection_logs.forEach(log => {
                 if (!wait_times[log.station_name]) wait_times[log.station_name] = [];
-                wait_times[log.station_name].push(log.dispatch_delay_minutes);
+                wait_times[log.station_name].push(log.normalized_wait_time);
             });
-            const avg_wait_times_hours = {};
-            ecostations.forEach(s => avg_wait_times_hours[s.station_name] = 0); 
+            const avg_normalized_wait_times = {};
+            ecostations.forEach(s => avg_normalized_wait_times[s.station_name] = 0); 
             for (const station in wait_times) {
-                const avg_minutes = wait_times[station].reduce((a, b) => a + b, 0) / wait_times[station].length;
-                avg_wait_times_hours[station] = avg_minutes / 60;
+                const avg_normalized = wait_times[station].reduce((a, b) => a + b, 0) / wait_times[station].length;
+                avg_normalized_wait_times[station] = avg_normalized;
             }
             
             const normalizedHourlyActivity = hourlyActivity.map(val => val / (params.TIME_STEP_MINUTES * num_work_days));
@@ -1212,7 +1207,7 @@
 
             return {
                 total_collected_waste_kg, overall_utilization, service_failures, truckStatus, failures_by_station,
-                potential_tonnage_increase_kg, avg_wait_times_hours, normalizedHourlyActivity, resultsByStation
+                potential_tonnage_increase_kg, avg_normalized_wait_times, normalizedHourlyActivity, resultsByStation
             };
         }
 
@@ -1303,19 +1298,19 @@
             });
 
             const waitTimeCtx = document.getElementById('waitTimeChart').getContext('2d');
-            const waitTimeData = Object.entries(results.avg_wait_times_hours).sort((a,b) => b[1] - a[1]);
+            const waitTimeData = Object.entries(results.avg_normalized_wait_times).sort((a,b) => b[1] - a[1]);
             if(waitTimeChartSingle) waitTimeChartSingle.destroy();
             waitTimeChartSingle = new Chart(waitTimeCtx, {
                 type: 'bar',
                 data: {
                     labels: waitTimeData.map(item => item[0]),
                     datasets: [{
-                        label: 'Average Dispatch Delay (hours)',
+                        label: 'Normalized Wait Time (min/km)',
                         data: waitTimeData.map(item => item[1].toFixed(2)),
                         backgroundColor: 'rgba(245, 158, 11, 0.8)',
                     }]
                 },
-                options: { ...chartOptions, indexAxis: 'y', scales: { ...chartOptions.scales, x: { ...chartOptions.scales.x, title: { display: true, text: 'Hours' } } } }
+                options: { ...chartOptions, indexAxis: 'y', scales: { ...chartOptions.scales, x: { ...chartOptions.scales.x, title: { display: true, text: 'Normalized Wait Time (min/km)' } } } }
             });
 
             const hourlyActivityCtx = document.getElementById('hourlyActivityChart').getContext('2d');
@@ -1533,15 +1528,15 @@
             });
 
              const waitTimeCtx = document.getElementById('waitTimeChartCompare').getContext('2d');
-            const stationNames = [...new Set([...Object.keys(resultsA.avg_wait_times_hours), ...Object.keys(resultsB.avg_wait_times_hours)])];
+            const stationNames = [...new Set([...Object.keys(resultsA.avg_normalized_wait_times), ...Object.keys(resultsB.avg_normalized_wait_times)])];
             if(waitTimeChartCompare) waitTimeChartCompare.destroy();
             waitTimeChartCompare = new Chart(waitTimeCtx, {
                 type: 'bar',
                 data: {
                     labels: stationNames,
                     datasets: [
-                         { label: 'Scenario A', data: stationNames.map(name => resultsA.avg_wait_times_hours[name] || 0), backgroundColor: 'rgba(79, 70, 229, 0.7)' },
-                         { label: 'Scenario B', data: stationNames.map(name => resultsB.avg_wait_times_hours[name] || 0), backgroundColor: 'rgba(13, 148, 136, 0.7)' }
+                         { label: 'Scenario A', data: stationNames.map(name => resultsA.avg_normalized_wait_times[name] || 0), backgroundColor: 'rgba(79, 70, 229, 0.7)' },
+                         { label: 'Scenario B', data: stationNames.map(name => resultsB.avg_normalized_wait_times[name] || 0), backgroundColor: 'rgba(13, 148, 136, 0.7)' }
                     ]
                 },
                 options: { ...chartOptions, indexAxis: 'y' }
@@ -1879,4 +1874,3 @@
     </script>
 </body>
 </html>
-
