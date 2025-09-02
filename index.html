@@ -1382,12 +1382,12 @@
 
             const resultsByStation = {};
             ecostations.forEach(s => {
-                resultsByStation[s.station_name] = { trips: 0, collected: 0 };
+                resultsByStation[s.station_name] = { collections: 0, collected: 0 };
             });
 
             collection_logs.forEach(log => {
                 if(resultsByStation[log.station_name]) {
-                    resultsByStation[log.station_name].trips++;
+                    resultsByStation[log.station_name].collections++;
                     resultsByStation[log.station_name].collected += log.collected_kg;
                 }
             });
@@ -1449,7 +1449,7 @@
                 const row = `
                     <tr>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${data.trips}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${data.collections}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">${(data.collected / 1000).toFixed(2)}</td>
                     </tr>
                 `;
@@ -1551,7 +1551,7 @@
             sortedStations.forEach(station => {
                 const timeToFill = station.daily_rate_kg > 0 ? (station.capacity_kg / station.daily_rate_kg).toFixed(1) : 'N/A';
                 const monthlyTons = ((station.daily_rate_kg * 30) / 1000).toFixed(2);
-                const ratePerStep = (effectiveWorkHours > 0) ? (station.daily_rate_kg / (effectiveWorkhours * 60)) * timeStep : 0;
+                const ratePerStep = (effectiveWorkHours > 0) ? (station.daily_rate_kg / (effectiveWorkHours * 60)) * timeStep : 0;
                 const row = `
                     <tr>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${station.name}</td>
@@ -2074,5 +2074,4 @@
     </script>
 </body>
 </html>
-"
 
