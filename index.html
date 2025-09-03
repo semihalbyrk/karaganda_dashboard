@@ -401,7 +401,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Station</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Collections Made</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visits to Station</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Collected (tons)</th>
                             </tr>
                         </thead>
@@ -944,42 +944,36 @@
                         const go_dist = distanceMatrix[GARAGE_NAME][station_name];
                         const return_dist = distanceMatrix[station_name][GARAGE_NAME];
                         const total_trip_distance_km = go_dist + return_dist;
+                        
+                        const assignment_minute = minute;
+                        const trip_end_minute = minute + Math.ceil(total_trip_duration_minutes);
+                        
+                        availableTruck.is_busy = true;
+                        availableTruck.busy_until_minute = trip_end_minute;
+                        availableTruck.total_work_minutes += total_trip_duration_minutes;
+                        availableTruck.trips_made += 1;
+                        availableTruck.total_km += total_trip_distance_km;
 
-                        const current_minute_of_day = minute % (24*60);
-                        const work_end_minute_of_day = params.WORK_END_HOUR * 60;
-                        const remaining_work_minutes_today = work_end_minute_of_day - current_minute_of_day;
+                        const station = ecostations.find(s => s.station_name === station_name);
+                        const collected_amount = station.current_waste_kg;
+                        station.current_waste_kg = 0.0;
+                        availableTruck.total_collected_kg += collected_amount;
 
-                        if (total_trip_duration_minutes < remaining_work_minutes_today) {
-                            const assignment_minute = minute;
-                            const trip_end_minute = minute + Math.ceil(total_trip_duration_minutes);
-                            
-                            availableTruck.is_busy = true;
-                            availableTruck.busy_until_minute = trip_end_minute;
-                            availableTruck.total_work_minutes += total_trip_duration_minutes;
-                            availableTruck.trips_made += 1;
-                            availableTruck.total_km += total_trip_distance_km;
+                        const arrival_minute = assignment_minute + Math.ceil(go_time);
+                        const raw_wait_time = arrival_minute - request.request_minute;
+                        const distance = distanceMatrix[GARAGE_NAME][station_name];
+                        const normalized_wait_time = distance > 0 ? raw_wait_time / distance : raw_wait_time;
 
-                            const station = ecostations.find(s => s.station_name === station_name);
-                            const collected_amount = station.current_waste_kg;
-                            station.current_waste_kg = 0.0;
-                            availableTruck.total_collected_kg += collected_amount;
-
-                            const arrival_minute = assignment_minute + Math.ceil(go_time);
-                            const raw_wait_time = arrival_minute - request.request_minute;
-                            const distance = distanceMatrix[GARAGE_NAME][station_name];
-                            const normalized_wait_time = distance > 0 ? raw_wait_time / distance : raw_wait_time;
-
-                            simulationLog.push({
-                                event: 'COLLECTION',
-                                station_name: station_name,
-                                collected_kg: collected_amount,
-                                normalized_wait_time: normalized_wait_time,
-                                trip_duration_minutes: total_trip_duration_minutes,
-                            });
-                            
-                            collection_queue.splice(i, 1);
-                            i--;
-                        }
+                        simulationLog.push({
+                            event: 'COLLECTION',
+                            station_name: station_name,
+                            collected_kg: collected_amount,
+                            normalized_wait_time: normalized_wait_time,
+                            trip_duration_minutes: total_trip_duration_minutes,
+                        });
+                        
+                        collection_queue.splice(i, 1);
+                        i--;
                     }
                 }
             }
@@ -1059,20 +1053,13 @@
                         candidate_pool.sort((a, b) => a.time_to_fill - b.time_to_fill);
                         
                         const first_stop_candidate = candidate_pool[0];
-                        const time_to_first_stop = timeMatrix[GARAGE_NAME][first_stop_candidate.station_name];
-                        const time_first_stop_to_garage = timeMatrix[first_stop_candidate.station_name][GARAGE_NAME];
-                        const initial_trip_time = time_to_first_stop + params.LOADING_TIME_MINUTES + time_first_stop_to_garage + params.UNLOADING_TIME_MINUTES;
 
-                        const current_minute_of_day = minute % (24 * 60);
-                        const work_end_minute_of_day = params.WORK_END_HOUR * 60;
-                        const remaining_work_minutes_today = work_end_minute_of_day - current_minute_of_day;
-
-                        if (first_stop_candidate.current_waste_kg <= params.TRUCK_CAPACITY_KG && initial_trip_time < remaining_work_minutes_today) {
+                        if (first_stop_candidate.current_waste_kg <= params.TRUCK_CAPACITY_KG) {
                             let route = [first_stop_candidate];
                             first_stop_candidate.is_in_route = true;
                             let remaining_truck_capacity = params.TRUCK_CAPACITY_KG - first_stop_candidate.current_waste_kg;
                             let current_location = first_stop_candidate.station_name;
-                            let trip_duration = time_to_first_stop + params.LOADING_TIME_MINUTES;
+                            let trip_duration = timeMatrix[GARAGE_NAME][first_stop_candidate.station_name] + params.LOADING_TIME_MINUTES;
                             let stops_to_consider = candidate_pool.slice(1);
 
                             while (true) {
@@ -1084,15 +1071,11 @@
                                         const time_to_candidate = timeMatrix[current_location][candidate.station_name];
                                         const time_candidate_to_garage = timeMatrix[candidate.station_name][GARAGE_NAME];
                                         const time_direct_to_garage = timeMatrix[current_location][GARAGE_NAME];
-
-                                        const time_if_added = trip_duration + time_to_candidate + params.LOADING_TIME_MINUTES + time_candidate_to_garage + params.UNLOADING_TIME_MINUTES;
-
-                                        if (time_if_added < remaining_work_minutes_today) {
-                                            const detour_cost = (time_to_candidate + params.LOADING_TIME_MINUTES + time_candidate_to_garage) - time_direct_to_garage;
-                                            if (detour_cost < lowest_detour_cost) {
-                                                lowest_detour_cost = detour_cost;
-                                                best_next_stop = candidate;
-                                            }
+                                        
+                                        const detour_cost = (time_to_candidate + params.LOADING_TIME_MINUTES + time_candidate_to_garage) - time_direct_to_garage;
+                                        if (detour_cost < lowest_detour_cost) {
+                                            lowest_detour_cost = detour_cost;
+                                            best_next_stop = candidate;
                                         }
                                     }
                                 }
@@ -1229,105 +1212,93 @@
                         });
                         candidate_pool.sort((a, b) => a.time_to_fill - b.time_to_fill);
                         
-                        const first_stop_candidate = candidate_pool[0];
-                        const time_to_first_stop = timeMatrix[GARAGE_NAME][first_stop_candidate.station_name];
+                        let route = [];
+                        let collected_on_route = [];
+                        let remaining_truck_capacity = params.TRUCK_CAPACITY_KG;
                         
-                        const current_minute_of_day = minute % (24 * 60);
-                        const work_end_minute_of_day = params.WORK_END_HOUR * 60;
-                        const remaining_work_minutes_today = work_end_minute_of_day - current_minute_of_day;
+                        let current_location = GARAGE_NAME;
+                        let trip_duration = 0;
+                        let stops_to_consider = [...candidate_pool];
+                        
+                        while(remaining_truck_capacity > 0.1 && stops_to_consider.length > 0) {
+                            let best_next_stop = null;
+                            let lowest_detour_cost = Infinity;
+                            
+                            let is_first_stop = route.length === 0;
 
-                        if (time_to_first_stop < remaining_work_minutes_today) {
-                            let route = [];
-                            let collected_on_route = [];
-                            let remaining_truck_capacity = params.TRUCK_CAPACITY_KG;
-                            
-                            let current_location = GARAGE_NAME;
-                            let trip_duration = 0;
-                            let stops_to_consider = [...candidate_pool];
-                            
-                            while(remaining_truck_capacity > 0.1 && stops_to_consider.length > 0) {
-                                let best_next_stop = null;
-                                let lowest_detour_cost = Infinity;
+                            for (const candidate of stops_to_consider) {
+                                const time_to_candidate = timeMatrix[current_location][candidate.station_name];
+                                const time_candidate_to_garage = timeMatrix[candidate.station_name][GARAGE_NAME];
+                                const time_direct_to_garage = timeMatrix[current_location][GARAGE_NAME];
                                 
-                                let is_first_stop = route.length === 0;
-
-                                for (const candidate of stops_to_consider) {
-                                    const time_to_candidate = timeMatrix[current_location][candidate.station_name];
-                                    const time_candidate_to_garage = timeMatrix[candidate.station_name][GARAGE_NAME];
-                                    const time_direct_to_garage = timeMatrix[current_location][GARAGE_NAME];
-                                    const time_if_added = trip_duration + time_to_candidate + params.LOADING_TIME_MINUTES + time_candidate_to_garage + params.UNLOADING_TIME_MINUTES;
-
-                                    if (time_if_added < remaining_work_minutes_today) {
-                                        const detour_cost = is_first_stop ? time_to_candidate : (time_to_candidate + params.LOADING_TIME_MINUTES + time_candidate_to_garage) - time_direct_to_garage;
-                                        if (detour_cost < lowest_detour_cost) {
-                                            lowest_detour_cost = detour_cost;
-                                            best_next_stop = candidate;
-                                        }
-                                    }
-                                }
-
-                                if (best_next_stop) {
-                                    const amount_to_collect = Math.min(best_next_stop.current_waste_kg, remaining_truck_capacity);
-                                    route.push(best_next_stop);
-                                    collected_on_route.push({station: best_next_stop, amount: amount_to_collect});
-                                    best_next_stop.is_in_route = true;
-
-                                    trip_duration += timeMatrix[current_location][best_next_stop.station_name] + params.LOADING_TIME_MINUTES;
-                                    remaining_truck_capacity -= amount_to_collect;
-                                    current_location = best_next_stop.station_name;
-                                    stops_to_consider = stops_to_consider.filter(s => s.station_name !== best_next_stop.station_name);
-                                } else {
-                                    break;
+                                const detour_cost = is_first_stop ? time_to_candidate : (time_to_candidate + params.LOADING_TIME_MINUTES + time_candidate_to_garage) - time_direct_to_garage;
+                                if (detour_cost < lowest_detour_cost) {
+                                    lowest_detour_cost = detour_cost;
+                                    best_next_stop = candidate;
                                 }
                             }
-                            
-                            if (route.length > 0) {
-                                trip_duration += timeMatrix[current_location][GARAGE_NAME] + params.UNLOADING_TIME_MINUTES;
-                                
-                                let route_distance_km = 0;
-                                let last_loc = GARAGE_NAME;
-                                route.forEach(stop => {
-                                    route_distance_km += distanceMatrix[last_loc][stop.station_name];
-                                    last_loc = stop.station_name;
-                                });
-                                route_distance_km += distanceMatrix[last_loc][GARAGE_NAME];
-                                
-                                tripCounter++;
-                                availableTruck.is_busy = true;
-                                availableTruck.busy_until_minute = minute + Math.ceil(trip_duration);
-                                availableTruck.total_work_minutes += trip_duration;
-                                availableTruck.trips_made += 1;
-                                availableTruck.total_km += route_distance_km;
-                                
-                                let arrival_at_current_stop = minute;
-                                let previous_location = GARAGE_NAME;
 
-                                collected_on_route.forEach(collection => {
-                                    const { station, amount } = collection;
-                                    const travel_time_to_stop = timeMatrix[previous_location][station.station_name];
-                                    arrival_at_current_stop += travel_time_to_stop;
-                                    const raw_wait_time = arrival_at_current_stop - station.request_minute;
-                                    const distance_leg = distanceMatrix[previous_location][station.station_name];
-                                    const normalized_wait_time = distance_leg > 0 ? raw_wait_time / distance_leg : raw_wait_time;
+                            if (best_next_stop) {
+                                const amount_to_collect = Math.min(best_next_stop.current_waste_kg, remaining_truck_capacity);
+                                route.push(best_next_stop);
+                                collected_on_route.push({station: best_next_stop, amount: amount_to_collect});
+                                best_next_stop.is_in_route = true;
 
-                                    simulationLog.push({
-                                        event: 'COLLECTION', station_name: station.station_name, collected_kg: amount,
-                                        normalized_wait_time: normalized_wait_time, trip_duration_minutes: trip_duration,
-                                        tripId: tripCounter
-                                    });
-
-                                    availableTruck.total_collected_kg += amount;
-                                    station.current_waste_kg -= amount;
-                                    station.is_in_route = false;
-                                    
-                                    if (station.current_waste_kg < station.max_capacity_kg * params.MIN_COLLECTION_THRESHOLD) {
-                                        station.request_minute = -1;
-                                    }
-                                    
-                                    arrival_at_current_stop += params.LOADING_TIME_MINUTES;
-                                    previous_location = station.station_name;
-                                });
+                                trip_duration += timeMatrix[current_location][best_next_stop.station_name] + params.LOADING_TIME_MINUTES;
+                                remaining_truck_capacity -= amount_to_collect;
+                                current_location = best_next_stop.station_name;
+                                stops_to_consider = stops_to_consider.filter(s => s.station_name !== best_next_stop.station_name);
+                            } else {
+                                break;
                             }
+                        }
+                        
+                        if (route.length > 0) {
+                            trip_duration += timeMatrix[current_location][GARAGE_NAME] + params.UNLOADING_TIME_MINUTES;
+                            
+                            let route_distance_km = 0;
+                            let last_loc = GARAGE_NAME;
+                            route.forEach(stop => {
+                                route_distance_km += distanceMatrix[last_loc][stop.station_name];
+                                last_loc = stop.station_name;
+                            });
+                            route_distance_km += distanceMatrix[last_loc][GARAGE_NAME];
+                            
+                            tripCounter++;
+                            availableTruck.is_busy = true;
+                            availableTruck.busy_until_minute = minute + Math.ceil(trip_duration);
+                            availableTruck.total_work_minutes += trip_duration;
+                            availableTruck.trips_made += 1;
+                            availableTruck.total_km += route_distance_km;
+                            
+                            let arrival_at_current_stop = minute;
+                            let previous_location = GARAGE_NAME;
+
+                            collected_on_route.forEach(collection => {
+                                const { station, amount } = collection;
+                                const travel_time_to_stop = timeMatrix[previous_location][station.station_name];
+                                arrival_at_current_stop += travel_time_to_stop;
+                                const raw_wait_time = arrival_at_current_stop - station.request_minute;
+                                const distance_leg = distanceMatrix[previous_location][station.station_name];
+                                const normalized_wait_time = distance_leg > 0 ? raw_wait_time / distance_leg : raw_wait_time;
+
+                                simulationLog.push({
+                                    event: 'COLLECTION', station_name: station.station_name, collected_kg: amount,
+                                    normalized_wait_time: normalized_wait_time, trip_duration_minutes: trip_duration,
+                                    tripId: tripCounter
+                                });
+
+                                availableTruck.total_collected_kg += amount;
+                                station.current_waste_kg -= amount;
+                                station.is_in_route = false;
+                                
+                                if (station.current_waste_kg < station.max_capacity_kg * params.MIN_COLLECTION_THRESHOLD) {
+                                    station.request_minute = -1;
+                                }
+                                
+                                arrival_at_current_stop += params.LOADING_TIME_MINUTES;
+                                previous_location = station.station_name;
+                            });
                         }
                     }
                 }
@@ -1560,7 +1531,9 @@
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${ratePerStep.toFixed(2)}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">${monthlyTons}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${station.capacity_kg.toFixed(1)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                             <input type="number" value="${station.capacity_kg.toFixed(1)}" data-name="${station.name}" class="w-24 p-1 border rounded capacity-input control-input">
+                        </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${timeToFill}</td>
                     </tr>
                 `;
@@ -1930,19 +1903,33 @@
         });
         
         stationsTableBody.addEventListener('change', (e) => {
-            if (e.target.classList.contains('daily-rate-input')) {
-                const stationName = e.target.dataset.name;
-                const newValue = parseFloat(e.target.value);
+            const target = e.target;
+            let propertyToUpdate = null;
+            let alertMessage = '';
 
-                if (isNaN(newValue) || newValue < 0) {
-                    alert('Please enter a valid positive number for the daily rate.');
+            if (target.classList.contains('daily-rate-input')) {
+                propertyToUpdate = 'daily_rate_kg';
+                alertMessage = 'Please enter a valid non-negative number for the daily rate.';
+            } else if (target.classList.contains('capacity-input')) {
+                propertyToUpdate = 'capacity_kg';
+                alertMessage = 'Please enter a valid positive number for the capacity.';
+            }
+
+            if (propertyToUpdate) {
+                const stationName = target.dataset.name;
+                const newValue = parseFloat(target.value);
+
+                const isInvalid = propertyToUpdate === 'capacity_kg' ? (isNaN(newValue) || newValue <= 0) : (isNaN(newValue) || newValue < 0);
+
+                if (isInvalid) {
+                    alert(alertMessage);
                     const station = allLocations.find(loc => loc.name === stationName);
-                    e.target.value = station.daily_rate_kg.toFixed(1);
+                    target.value = station[propertyToUpdate].toFixed(1);
                     return;
                 }
 
                 const station = allLocations.find(loc => loc.name === stationName);
-                station.daily_rate_kg = newValue;
+                if (station) station[propertyToUpdate] = newValue;
 
                 populateStationsTable(); 
                 renderDistancesView();
