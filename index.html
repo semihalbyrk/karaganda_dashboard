@@ -391,6 +391,9 @@
                         </tbody>
                     </table>
                 </div>
+                 <div id="historicalNote" class="hidden mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 text-sm rounded-r-lg">
+                    <!-- Content will be added by JS -->
+                </div>
             </div>
 
             <!-- Simulation Results Table -->
@@ -1408,6 +1411,17 @@
                 </tr>
             `;
             tableBody.innerHTML += totalRow;
+            
+            const historicalNote = document.getElementById('historicalNote');
+            const params = getCurrentParams(); 
+            if (params.SIMULATION_LOGIC === 'direct') {
+                const projected30DayTrips = (totalTrips / params.SIMULATION_DAYS) * 30;
+                historicalNote.innerHTML = `<p><strong>Historical Benchmark:</strong> The average number of trips for a 30-day period is <strong>74</strong>. This simulation projects <strong>${projected30DayTrips.toFixed(0)}</strong> trips for a 30-day period based on current settings.</p>`;
+                historicalNote.classList.remove('hidden');
+            } else {
+                historicalNote.classList.add('hidden');
+            }
+
             trucksTableView.classList.remove('hidden');
         }
 
@@ -1585,7 +1599,7 @@
             const container = document.getElementById('comparisonTrucksTableView');
             let html = '<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">';
 
-            const createTable = (title, results) => {
+            const createTable = (title, results, scenarioParams) => {
                 let tableHtml = `
                     <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-xl font-bold text-gray-800 mb-4">${title}</h3>
@@ -1625,12 +1639,21 @@
                         <td class="px-2 py-2 text-sm">${(totalKg / 1000).toFixed(2)}</td>
                         <td class="px-2 py-2 text-sm">${results.overall_utilization.toFixed(2)}</td>
                     </tr>
-                </tbody></table></div></div>`;
+                </tbody></table></div>`;
+                 if (scenarioParams.SIMULATION_LOGIC === 'direct') {
+                    const projected30DayTrips = (totalTrips / scenarioParams.SIMULATION_DAYS) * 30;
+                    tableHtml += `
+                        <div class="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 text-sm rounded-r-lg">
+                            <p><strong>Historical Benchmark:</strong> The 30-day average is <strong>74</strong> trips. This scenario projects <strong>${projected30DayTrips.toFixed(0)}</strong> trips.</p>
+                        </div>
+                    `;
+                }
+                tableHtml += '</div>';
                 return tableHtml;
             };
 
-            html += createTable('Scenario A: Truck Performance', resultsA);
-            html += createTable('Scenario B: Truck Performance', resultsB);
+            html += createTable('Scenario A: Truck Performance', resultsA, scenarioA.params);
+            html += createTable('Scenario B: Truck Performance', resultsB, scenarioB.params);
             html += '</div>';
             container.innerHTML = html;
         }
