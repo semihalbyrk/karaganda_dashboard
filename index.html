@@ -601,18 +601,18 @@
     <script>
         // --- DATA SECTION ---
         const initialLocations = [
-            { name: 'СОРТИРОВК', lat: 49.976136, lon: 73.21353, daily_rate_kg: 487.1, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'АЛИХАНОВА', lat: 49.812733, lon: 73.10442, daily_rate_kg: 338.2, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'КАЙРАТ', lat: 49.852155, lon: 73.189151, daily_rate_kg: 290.5, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'ПРИШАХТИН', lat: 49.902935, lon: 73.090803, daily_rate_kg: 231.8, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'ГОРНЯК', lat: 49.89676, lon: 73.209151, daily_rate_kg: 193.3, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: '6 МКР-Н Т', lat: 50.048318, lon: 72.960638, daily_rate_kg: 148.2, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'ШАХТИНСК', lat: 49.700802, lon: 72.603979, daily_rate_kg: 125.8, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'АРБА', lat: 49.784771, lon: 73.102483, daily_rate_kg: 115.3, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'Абай', lat: 49.629102, lon: 72.874421, daily_rate_kg: 98.7, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'САРАНЬ', lat: 49.804743, lon: 72.829176, daily_rate_kg: 94.1, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'Экспресс-Темиртау', lat: 50.062618, lon: 72.992437, daily_rate_kg: 85.4, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
-            { name: 'СТЕПНОЙ', lat: 49.785033, lon: 73.151946, daily_rate_kg: 80.8, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'СОРТИРОВК', lat: 49.976136, lon: 73.21353, daily_rate_kg: 550.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'АЛИХАНОВА', lat: 49.812733, lon: 73.10442, daily_rate_kg: 400.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'КАЙРАТ', lat: 49.852155, lon: 73.189151, daily_rate_kg: 350.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'ПРИШАХТИН', lat: 49.902935, lon: 73.090803, daily_rate_kg: 300.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'ГОРНЯК', lat: 49.89676, lon: 73.209151, daily_rate_kg: 250.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: '6 МКР-Н Т', lat: 50.048318, lon: 72.960638, daily_rate_kg: 200.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'ШАХТИНСК', lat: 49.700802, lon: 72.603979, daily_rate_kg: 170.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'АРБА', lat: 49.784771, lon: 73.102483, daily_rate_kg: 160.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'Абай', lat: 49.629102, lon: 72.874421, daily_rate_kg: 150.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'САРАНЬ', lat: 49.804743, lon: 72.829176, daily_rate_kg: 150.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'Экспресс-Темиртау', lat: 50.062618, lon: 72.992437, daily_rate_kg: 130.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
+            { name: 'СТЕПНОЙ', lat: 49.785033, lon: 73.151946, daily_rate_kg: 120.0, capacity_kg: 1500, type: 'ecostation', isOriginal: true },
             { name: 'Garage', lat: 49.791967, lon: 73.162751, daily_rate_kg: 0, capacity_kg: 0, type: 'garage', isOriginal: true }
         ];
 
@@ -1302,7 +1302,7 @@
             const params = getCurrentParams(); 
             if (params.SIMULATION_LOGIC === 'direct') {
                 const projected30DayTrips = (totalTrips / params.SIMULATION_DAYS) * 30;
-                historicalNote.innerHTML = `<p><strong>Historical Benchmark:</strong> The average number of trips for a 30-day period is <strong>74</strong>. This simulation projects <strong>${projected30DayTrips.toFixed(0)}</strong> trips for a 30-day period based on current settings.</p>`;
+                historicalNote.innerHTML = `<p><strong>Historical Benchmark:</strong> The average number of trips for a 30-day period is <strong>74</strong>. This simulation projects <strong>${projected30DayTrips.toFixed(0)}</strong> trips for a 30-day period based on current settings. The average amount of waste collected for 30-day period is <strong>70.8</strong> ton.</p>`;
                 historicalNote.classList.remove('hidden');
             } else {
                 historicalNote.classList.add('hidden');
@@ -1628,7 +1628,7 @@
 
             const hourlyActivityCtx = document.getElementById('hourlyActivityChartCompare').getContext('2d');
             if(hourlyActivityChartCompare) hourlyActivityChartCompare.destroy();
-            hourlyActivityChartCompare = new Chart(hourlyActivityCtx, {
+            hourlyActivityChartCompare = new Chart(hourlyActivityChartCompare, {
                 type: 'bar',
                 data: {
                     labels: Array.from({length: 24}, (_, i) => `${i}:00`),
@@ -1980,5 +1980,4 @@
     </script>
 </body>
 </html>
-
 
